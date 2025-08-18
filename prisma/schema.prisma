@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum QualificationType {
+  ADDITIONAL
+  PROFESSIONAL
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  phone              String              @unique
+  phoneVerified      Boolean             @default(false)
+  email              String?             @unique
+  password           String?
+  role               String?             
+  done               Boolean?            @default(false)
+  personalData       PersonalData?
+  educationHistory   EducationHistory?
+  employmentData     EmploymentData?
+  otherData          OtherData?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model OTP {
+  id         String   @id @default(uuid())
+  phone      String   
+  code       String
+  expiresAt  DateTime
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model PersonalData {
+  id                 String         @id @default(uuid())
+  userId             String         @unique 
+  firstName          String
+  lastName           String
+  gender             Gender
+  dob                DateTime
+  maritalStatus      MaritalStatus
+  address            String
+  lga                String
+  state              String
+  placeOfBirth       String
+  senatorialDistrict String
+  pensionAdmin       String
+  penComNo           String           @unique 
+  nextOfKin          String
+  nextOfKinPhone     String
+
+  user               User           @relation(fields: [userId], references: [id])
+}
+
+model FormDraft {
+  id        String   @id @default(uuid())
+  phone     String
+  page      String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([phone, page]) // One draft per page per phone
+}
+
+
+model EducationHistory {
+  id               String                   @id @default(uuid())
+  userId           String                   @unique 
+  qualAt1stAppt    String
+  institution    String
+  startDate       DateTime?
+  endDate       DateTime?
+  addQualification AdditionalQualification[]
+
+  user             User                     @relation(fields: [userId], references: [id])
+}
+
+model AdditionalQualification {
+  id               String             @id @default(uuid())
+  educId           String             
+  type             QualificationType
+  qualification    String
+  institution      String
+  startDate       DateTime?
+  endDate       DateTime?
+
+  educationHistory EducationHistory   @relation(fields: [educId], references: [id])
+}
+
+model EmploymentData {
+  id                     String              @id @default(uuid())
+  userId                 String              @unique 
+  personnelNumber        String              @unique 
+  ippisNumber            String               @unique 
+  rank                   String
+  gradeLevel             String
+  step                   String
+  dateFirstAppointed     DateTime
+  datePresentAppointment DateTime
+  dateLastPromotion      DateTime
+  rankAtFirstAppointment String
+  presentStation         String
+  previousStations       PreviousStation[]
+  presentJobDescription  String
+  previousJobsHandled    PreviousJobHandle[]
+  department             String
+  yearsInStation         Int
+  yearsInService         Int
+
+  user                   User                @relation(fields: [userId], references: [id])
+}
+
+model PreviousStation {
+  id               String           @id @default(uuid())
+  employmentDataId String           
+  station          String
+  yearsInStation   String
+
+  employmentData   EmploymentData   @relation(fields: [employmentDataId], references: [id])
+}
+
+model PreviousJobHandle {
+  id               String           @id @default(uuid())
+  employmentDataId String           
+  job              String
+  yearsInJob       String
+  jobDescription   String
+
+  employmentData   EmploymentData   @relation(fields: [employmentDataId], references: [id])
+}
+
+model OtherData {
+  id       String @id @default(uuid())
+  userId   String @unique 
+  content  Json?
+
+  user     User   @relation(fields: [userId], references: [id])
+}
