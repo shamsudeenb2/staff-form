@@ -52,6 +52,14 @@ export async function POST(req: Request) {
             jobDescription: pj.jobDescription,
           })),
         },
+        previousPromotion: {
+          deleteMany: {},
+          create: data.previousPromotion.map((pj) => ({
+            rank: pj.rank,
+            gradeLevel: pj.gradeLevel,
+            date: pj.date,
+          })),
+        },
       },
       create: {
         userId: user.id,
@@ -82,10 +90,19 @@ export async function POST(req: Request) {
             jobDescription: pj.jobDescription,
           })),
         },
+        previousPromotion: {
+          deleteMany: {},
+          create: data.previousPromotion.map((pj) => ({
+            rank: pj.rank,
+            gradeLevel: pj.gradeLevel,
+            date: pj.date,
+          })),
+        },
       },
       include: {
         previousStations: true,
         previousJobsHandled: true,
+        previousPromotion: true,
       },
     });
 
@@ -110,7 +127,7 @@ export async function GET(req: Request) {
 
   const record = await prisma.employmentData.findUnique({
     where: { userId: user.id },
-    include: { previousStations: true, previousJobsHandled: true },
+    include: { previousStations: true, previousJobsHandled: true, previousPromotion: true },
   });
 
   return NextResponse.json({ success: true, data: record ?? null });

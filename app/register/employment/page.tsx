@@ -121,6 +121,7 @@ export default function EmploymentPage() {
       yearsInService: 0,
       previousStations: [],
       previousJobsHandled: [],
+      previousPromotion: [],
     },
   });
 
@@ -169,6 +170,7 @@ export default function EmploymentPage() {
   // Repeatable sections
   const stationsFA = useFieldArray({ control, name: "previousStations" });
   const jobsFA = useFieldArray({ control, name: "previousJobsHandled" });
+  const promotionsFA = useFieldArray({ control, name: "previousPromotion" });
 
 
   const onSubmit = async (data: EmploymentFormType) => {
@@ -305,6 +307,63 @@ export default function EmploymentPage() {
                       <p className="text-red-600 text-sm mt-1">{errors.rankAtFirstAppointment.message}</p>
                     )}
                   </div>
+                </div>
+              </section>
+              
+              {/* Previous Promotions Held */}
+              <section>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-semibold">Previous Promotions</h2>
+                  <Button
+                    type="button"
+                    onClick={() => promotionsFA.append({ rank: "", gradeLevel: "", date: "" })}
+                    variant="secondary"
+                  >
+                    Add Promotion
+                  </Button>
+                </div>
+
+                {promotionsFA.fields.length === 0 && (
+                  <p className="text-sm text-gray-500">No previous promotion added yet.</p>
+                )}
+
+                <div className="space-y-3">
+                  {promotionsFA.fields.map((f, i) => (
+                    <div key={f.id} className="border rounded p-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                          <Label>Rank</Label>
+                          <Input {...register(`previousPromotion.${i}.rank` as const)} />
+                          {errors.previousPromotion?.[i]?.rank && (
+                            <p className="text-red-600 text-sm mt-1">
+                              {errors.previousPromotion[i]?.rank?.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label>Grade Level</Label>
+                          <Input {...register(`previousPromotion.${i}.gradeLevel` as const)} />
+                          {errors.previousPromotion?.[i]?.gradeLevel && (
+                            <p className="text-red-600 text-sm mt-1">
+                              {errors.previousPromotion[i]?.gradeLevel?.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <DateField
+                            label="Date of Promotion"
+                            value={`previousPromotion.${i}.date` as const}
+                            onSelectISO={(iso) => setValue(`previousPromotion.${i}.date` as const, iso, { shouldValidate: true })}
+                          />
+                        </div>
+                        <div className="md:col-span-3 flex justify-end">
+                          <Button type="button" variant="destructive" onClick={() => promotionsFA.remove(i)}>
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
 

@@ -1,6 +1,12 @@
 // /components/utils/employmentSchema.ts
 import { z } from "zod";
 
+export const PrevPromotionSchema = z.object({
+  rank: z.string().min(1, "rank is required"),
+  gradeLevel: z.string().min(1, "rank is required"),
+  date: z.iso.datetime("Use the calendar to pick a date"),
+});
+
 export const PrevStationSchema = z.object({
   station: z.string().min(1, "Station is required"),
   yearsInStation: z.string().min(1, "Years in station is required"),
@@ -34,6 +40,7 @@ export const EmploymentSchema = z.object({
 
   previousStations: z.array(PrevStationSchema).default([]),
   previousJobsHandled: z.array(PrevJobSchema).default([]),
+  previousPromotion: z.array(PrevPromotionSchema).default([]),
 });
 
 export type EmploymentFormType = z.infer<typeof EmploymentSchema>;

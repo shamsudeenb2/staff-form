@@ -121,6 +121,7 @@ model EmploymentData {
   rankAtFirstAppointment String
   presentStation         String
   previousStations       PreviousStation[]
+  previousPromotion      PreviousPromotion[]
   presentJobDescription  String
   previousJobsHandled    PreviousJobHandle[]
   department             String
@@ -135,6 +136,16 @@ model PreviousStation {
   employmentDataId String           
   station          String
   yearsInStation   String
+
+  employmentData   EmploymentData   @relation(fields: [employmentDataId], references: [id])
+}
+
+model PreviousPromotion {
+  id               String           @id @default(uuid())
+  employmentDataId String           
+  rank             String
+  gradeLevel       String
+  date             String
 
   employmentData   EmploymentData   @relation(fields: [employmentDataId], references: [id])
 }
