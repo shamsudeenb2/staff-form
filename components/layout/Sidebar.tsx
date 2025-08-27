@@ -1,18 +1,18 @@
 "use client";
 
-import { Home, UserPlus, Fingerprint, Menu, Users, QrCode, LogOut } from "lucide-react";
+import { Home, UserPlus, Fingerprint, Menu, Users, QrCode, LogOut, User2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { getSession } from "@/app/config/auth";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
-type Role = "admin" | "supervisor" | "employee";
+type Role = "admin" | "supervisor" | "staff";
 
 // Example: Replace with user role from auth context or API
-const currentUserRole: Role = "admin";
+
 
 const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
   admin: [
@@ -27,15 +27,17 @@ const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
     { name: "Capture Fingerprint", href: "/fingerprint-lookup", icon: Fingerprint },
     { name: "Departments", href: "/departments", icon: Users },
   ],
-  employee: [
-    { name: "Dashboard", href: "/", icon: Home },
-    { name: "Capture Fingerprint", href: "/fingerprint-lookup", icon: Fingerprint },
+  staff: [
+    { name: "Dashboard", href: "/users", icon: Home },
+    { name: "Bio Data", href: "/users/", icon: User2 },
   ],
 };
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const {data: session} = useSession()
+  const currentUserRole: Role = session?.user?.role;
 
   const isActive = (href: string) => pathname === href;
   const menu = menuByRole[currentUserRole];
