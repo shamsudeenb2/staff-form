@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                         {filteredUsers.map((u) => (
                           <tr key={u.id} className="border-t">
                             <td className="p-3">
-                              <Link href={`/register/personal?userId=${u.id}`} className="text-primary hover:underline">
+                              <Link href={`/admin/users/${u.id}`} className="text-primary hover:underline">
                                 {u.name}
                               </Link>
                             </td>

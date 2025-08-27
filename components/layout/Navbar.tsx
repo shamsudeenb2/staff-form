@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const {data: session} = useSession()
+  console.log("session data navbar",session)
   return (
     <header className="fixed top-0 left-0 lg:left-0 right-0 h-16 bg-white shadow flex items-center justify-between px-6 z-20">
       {session?(
       <>
       <div className="absolute left-1/2 transform -translate-x-1/2 text-xl font-bold text-gray-700">
-       Nigerian Postal Service
+       Nigerian Postal Service log in
       </div>
       {/* Centered App Name */}
         <div className="ml-auto flex items-center gap-6">

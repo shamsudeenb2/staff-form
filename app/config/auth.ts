@@ -54,9 +54,6 @@ function resetAttempts(key: string) {
 // ...authConfig,
 export const authOptions={  
    adapter: PrismaAdapter(prisma),
-    session: {
-      strategy: "jwt",
-    },
     providers: [
       CredentialsProvider({
         name: "Credentials",
@@ -97,6 +94,9 @@ export const authOptions={
     },
     pages: {
       signIn: "/login",
+    },
+    session: {
+      strategy: "jwt",
     },
     secret: process.env.NEXTAUTH_SECRET,
   };

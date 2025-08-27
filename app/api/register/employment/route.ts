@@ -91,7 +91,6 @@ export async function POST(req: Request) {
           })),
         },
         previousPromotion: {
-          deleteMany: {},
           create: data.previousPromotion.map((pj) => ({
             rank: pj.rank,
             gradeLevel: pj.gradeLevel,
