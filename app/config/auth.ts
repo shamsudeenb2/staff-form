@@ -5,7 +5,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/components/lib/db";
 import bcrypt from "bcryptjs";
 import axios from "axios";
-
+import { NextAuthOptions } from "next-auth";
 
 /**
  * Simple in-memory rate limiter for login attempts.
@@ -52,57 +52,121 @@ function resetAttempts(key: string) {
 
 
 // ...authConfig,
-export const authOptions={  
-   adapter: PrismaAdapter(prisma),
-    providers: [
-      CredentialsProvider({
-        name: "Credentials",
-        credentials: {
-          email: {},
-          password: {},
-        },
-        async authorize(credentials) {
-          const user = await prisma.user.findUnique({
-            where: { email: credentials?.email },
-          });
+// export const authOptions={  
+//    adapter: PrismaAdapter(prisma),
+//     providers: [
+//       CredentialsProvider({
+//         name: "Credentials",
+//         credentials: {
+//           email: {},
+//           password: {},
+//         },
+//         async authorize(credentials) {
+//           const user = await prisma.user.findUnique({
+//             where: { email: credentials?.email },
+//           });
 
-          console.log("login user", user)
+//           console.log("login user", user)
   
-          if (!user || !credentials?.password) return null;
-          const isValid = await bcrypt.compare(credentials.password, user.password);
-          if (!isValid) return null;
+//           if (!user || !credentials?.password) return null;
+//           const isValid = await bcrypt.compare(credentials.password, user.password);
+//           if (!isValid) return null;
   
-          return user;
-        },
-      }),
-    ],
-    callbacks: {
-      async jwt({ token, user }) {
-        if (user) {
-          token.role = user.role;
-          token.id = user.id;
-        }
-        return token;
+//           return user;
+//         },
+//       }),
+//     ],
+//     callbacks: {
+//       async jwt({ token, user }) {
+//         if (user) {
+//           token.role = user.role;
+//           token.id = user.id;
+//         }
+//         return token;
+//       },
+//       async session({ session, token }) {
+//         if (token) {
+//           session.user.id = token.id;
+//           session.user.role = token.role;
+//         }
+//         return session;
+//       },
+//     },
+//     pages: {
+//       signIn: "/login",
+//     },
+//     session: {
+//       strategy: "jwt",
+//     },
+//     secret: process.env.NEXTAUTH_SECRET,
+//   };
+
+
+
+// const getSession = () => getServerSession(authOptions)
+
+// export { getSession }
+
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { type: "email", label: "Email" },
+        password: { type: "password", label: "Password" },
       },
-      async session({ session, token }) {
-        if (token) {
-          session.user.id = token.id;
-          session.user.role = token.role;
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) {
+          return null;
         }
-        return session;
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+
+        if (!isValid) {
+          return null;
+        }
+        
+        // This is the user object that will be returned to the JWT callback
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        };
       },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+        token.id = user.id;
+      }
+      return token;
     },
-    pages: {
-      signIn: "/login",
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+      }
+      return session;
     },
-    session: {
-      strategy: "jwt",
-    },
-    secret: process.env.NEXTAUTH_SECRET,
-  };
+  },
+  pages: {
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};
 
-
-
-const getSession = () => getServerSession(authOptions)
-
-export { getSession }
+export const getSession = () => getServerSession(authOptions);
