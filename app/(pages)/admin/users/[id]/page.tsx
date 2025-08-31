@@ -185,24 +185,6 @@ export default function AdminUserDetailsPage() {
                 >
                   Next
                 </Button>
-                {/* <Button
-                  variant={page === 3 ? "default" : "outline"}
-                  onClick={() => setPage(3)}
-                >
-                  Page 3
-                </Button>
-                <Button
-                  variant={page === 4 ? "default" : "outline"}
-                  onClick={() => setPage(4)}
-                >
-                  Page 4
-                </Button>
-                <Button
-                  variant={page === 5 ? "default" : "outline"}
-                  onClick={() => setPage(5)}
-                >
-                  Page 5
-                </Button> */}
               </div>
             </div>
 

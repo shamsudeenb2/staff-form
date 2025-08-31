@@ -1041,7 +1041,6 @@ export default function EmploymentPage() {
           </div>
         </main>
       </motion.div>
-      {/* </DashboardLayout> */}
     </>
   );
 }

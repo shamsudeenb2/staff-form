@@ -312,7 +312,7 @@ export default function OthersPage() {
                 <div className="mt-3">
                   <Button
                     type="button"
-                    onClick={() => append({ title: "", skills:"", dateIssued: "", fileUrl:Blob})}
+                    onClick={() => append({ title: "", skills:"", dateIssued: ""})}
                   >
                     Add Certificate
                   </Button>

@@ -21,10 +21,15 @@ import { useRouter } from "next/navigation";
 
 type FormData = z.infer<typeof userSchema>;
 
+type RegisterPayload = {
+  id: string;
+  name: string; 
+};
+
 export default function RegisterUser() {
 //   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [userData, setData] = useState<string[]>([]);
+  const [userData, setData] = useState<RegisterPayload[]>([]);
    const router = useRouter();
 
   const { register, handleSubmit,watch, setValue, formState: { errors } } = useForm<FormData>({
