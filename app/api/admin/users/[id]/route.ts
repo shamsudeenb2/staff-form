@@ -5,9 +5,9 @@ type Params = {
   params: { id: string };
 };
 
-export async function GET(_req: NextRequest, context: { params: { id: string } }) {
+export async function GET(_req: NextRequest, context: any) {
   try {
-    const { params } = context;
+    const { params } = context as { params: { id: string } };
     const user = await prisma.user.findUnique({
       where: { id: params.id },
       include: {
