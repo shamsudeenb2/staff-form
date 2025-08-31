@@ -9,19 +9,40 @@ import { motion } from "framer-motion";
 
 export default function ValidatePhone() {
   const [phone, setPhone] = useState("");
+  const [validatePhone, setValidatePhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [countdown, setCountdown] = useState(0);
   const router = useRouter();
 
+  const validatePhoneNumber = (phoneNumber:string) => {
+  const regex = /^(\+234)[7-9][0-9]{9}$/;
+  return regex.test(phoneNumber);
+};
+  const handleInputChange = (event) => {
+    const value = event.target.value;
+    setPhone(value);
+    console.log("name them",validatePhoneNumber(value))
+    if (validatePhoneNumber(value)) {
+         setValidatePhone(value);
+    } 
+    
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     // e.preventDefault();
     setLoading(true)
-    console.log("lets see the phone", phone)
+    if (!validatePhoneNumber(phone)) {
+         setMessage('Mobile number is invalid. phone number must begin with +234.')
+         setLoading(false)
+         return
+       } 
+    setMessage("")
+    console.log("lets see the phone", validatePhone)
     const res = await fetch("/api/otp/send", {
       method: "POST",
-      body: JSON.stringify({phone}),
+      body: JSON.stringify({validatePhone}),
       headers: { "Content-Type": "application/json" },
     });
 
@@ -36,11 +57,11 @@ export default function ValidatePhone() {
         router.push("/register/personal");
 
     } else if (data.success) {
-      localStorage.setItem("phone", phone);
+      localStorage.setItem("phone", validatePhone);
 
       router.push("/otp-verification");
     } else if (data.done) {
-      localStorage.setItem("phone", phone);
+      localStorage.setItem("validatePhone", validatePhone);
       router.push("/login");
     }
     else {
@@ -74,12 +95,13 @@ export default function ValidatePhone() {
           <div  className="space-y-4">
             <input
               type="tel"
-              placeholder="e.g. 08012345678"
+              placeholder="e.g. +2348012345678"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={handleInputChange}
               className="border border-gray-300 w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             />
             {error && <p className="text-red-600 text-sm">{error}</p>}
+            {message && <p className="text-red-600 text-sm">{message}</p>}
 
             <button
               disabled={loading}

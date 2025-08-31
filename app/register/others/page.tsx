@@ -9,6 +9,7 @@ import { Toaster, toast } from "sonner";
 import { motion } from "framer-motion";
 import debounce from "lodash.debounce";
 import { format } from "date-fns";
+import { Upload, FileIcon } from 'lucide-react';
 
 
 import  DateField  from "@/components/DateInput";
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FileInput from "@/components/FileUpload";
+import { blob } from "stream/consumers";
 
 /* ------------------------------- Schema ---------------------------------- */
 
@@ -27,14 +29,14 @@ const OthersSchema = z.object({
         title: z.string().min(2, "Title is required"),
         dateIssued: z.string().min(1, "Date is required"),
         skills: z.string().min(2, "Skills must be at least 2 characters"),
-        // fileUrl:  z
-        //   .instanceof(File, { message: "File is required" })
-        //   .refine((file) => file.size <= 2 * 1024 * 1024, {
-        //     message: "File size must be <= 2MB",
-        //   })
+    //     fileUrl:  z
+    //       .instanceof(File, { message: "File is required" })
+    //       .refine((file) => file.size <= 2 * 1024 * 1024, {
+    //         message: "File size must be <= 2MB",
+    //       })
     //       .refine((file) => ["application/pdf"].includes(file.type), {
     //         message: "Only PDF files are allowed",
-    // }),
+    // }).optional(),
       })
     )
     .optional(),
@@ -62,6 +64,8 @@ export default function OthersPage() {
     const router = useRouter();
   const [phone, setPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (!isBrowser()) return;
       setPhone(window.localStorage.getItem("nipost_phone"));
@@ -82,6 +86,12 @@ export default function OthersPage() {
     },
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+    }
+  };
   const watched = watch();
   
     // Load draft when phone is ready
@@ -150,10 +160,12 @@ export default function OthersPage() {
               formData.append(`certificates[${index}][title]`, cert.title);
               formData.append(`certificates[${index}][dateIssued]`, cert.dateIssued);
               formData.append(`certificates[${index}][skills]`, cert.skills);
-              // if (cert.fileUrl instanceof File) {
-              //   formData.append(`certificates[${index}][fileUrl]`, cert.fileUrl);
-              // }
+            //   if (cert.fileUrl instanceof File) {
+            //     formData.append(`certificates[${index}][fileUrl]`, cert.fileUrl);
+            //     console.log("file value", cert.fileUrl)
+            //   }
             });
+            
           formData.append(`phone`, p);
           
           const res = await fetch("/api/register/others", {
@@ -243,27 +255,35 @@ export default function OthersPage() {
                             </p>
                           )}
                         </div>
-                        {/* <div>
-                          <FileInput
-                            label="Upload Document (PDF only)"
-                            accept="application/pdf"
+                        <div>
+                          {/* <input
+                            id="file"
+                            type="file"
+                            accept=".pdf"
+                            disabled={uploading}
+                            onChange={handleFileChange}
+                          />
+
+                          {file && (
+                            <div className="flex items-center gap-3 mt-2 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded">
+                              <FileIcon className="w-5 h-5 text-blue-500" />
+                              <p className="text-sm truncate">{file.name}</p>
+                            </div>
+                          )} */}
+                          {/* <Label>Upload Document (PDF only)"</Label>
+                          <Input
+                            // label="Upload Document (PDF only)"
+                            id="file"
+                            type="file"
+                            accept=".pdf"
                             {...register(`certificates.${index}.fileUrl` as const)}
-                            onChange={(e) => {
-                              const file = (e.target as HTMLInputElement).files?.[0] ?? undefined;
-                              console.log("inside file",`certificates.${index}.fileUrl` )
-                              setValue(`certificates.${index}.fileUrl` as const, file as any, {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                              console.log("inside file",`certificates.${index}.fileUrl` )
-                            }}
                           />
                           {errors.certificates?.[index]?.fileUrl && (
                             <p className="text-sm text-red-600 mt-1">
                               {errors.certificates[index]?.fileUrl?.message}
                             </p>
-                          )}
-                        </div> */}
+                          )} */}
+                        </div>
                           <div>
                             <DateField
                             label="Date Issued"
@@ -292,7 +312,7 @@ export default function OthersPage() {
                 <div className="mt-3">
                   <Button
                     type="button"
-                    onClick={() => append({ title: "", skills:"", dateIssued: ""})}
+                    onClick={() => append({ title: "", skills:"", dateIssued: "", fileUrl:Blob})}
                   >
                     Add Certificate
                   </Button>

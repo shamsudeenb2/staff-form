@@ -93,20 +93,21 @@ import { NextResponse,NextRequest } from "next/server";
 import { createOtpForPhone } from "@/components/lib/otp";
 import { sendSms } from "@/components/lib/sms";
 import { prisma } from "@/components/lib/db";
-import rateLimit from "express-rate-limit";
+
+
 
 // const otpRequests: Record<string, { count: number; lastRequest: number }> = {};
 
 export async function POST(req: NextRequest) {
   console.log("lets see the phone")
   try {
-    const { phone } = await req.json();
+    const { validatePhone } = await req.json();
     
-  if (!phone) return NextResponse.json({ error: "phone required" }, { status: 400 });
+  if (!validatePhone) return NextResponse.json({ error: "validatePhone required" }, { status: 400 });
 
     // check existing validated user
     const user = await prisma.user.findUnique({ 
-      where: { phone } 
+      where: { phone: validatePhone } 
     });
 
      if (user && user.done) return NextResponse.json({ done: true });
@@ -115,12 +116,17 @@ export async function POST(req: NextRequest) {
 
    
 
-  
-    const { code, expiresAt } = await createOtpForPhone(phone);
-    const message = `Your NIPOST OTP is: ${code} (valid 5 minutes)`;
-    const sendResult = await sendSms(phone, message);
 
-    return NextResponse.json({ success: true, expiresAt, sendResult });
+
+    // const phoneNumber = "+234".concat(validatePhone)
+    const { code, expiresAt } = await createOtpForPhone(validatePhone);
+    const message = `Your NIPOST OTP is: ${code} (valid 5 minutes)`;
+    const sentResult = await sendSms(validatePhone, message);
+
+    if(sentResult){
+      return NextResponse.json({ success: true, expiresAt, sentResult });
+    }
+    return NextResponse.json({ success: false, expiresAt, sentResult }, { status: 500 });
   } catch (err) {
     console.error('error handling',err);
     return NextResponse.json({ error: "internal server error" }, { status: 500 });

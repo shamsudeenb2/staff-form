@@ -416,7 +416,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 // Use your shared schema if you have it:
 import { EduSchema, EducationalFormType } from "@/components/utils/eduSchema";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+// import DashboardLayout from "@/components/layout/DashboardLayout";
 
 /* --------------------------- helpers (dates, draft) -------------------------- */
 
@@ -668,7 +668,7 @@ export default function EducationPage() {
 
   return (
     <>
-    <DashboardLayout>
+    {/* <DashboardLayout> */}
       <Toaster/>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -763,7 +763,7 @@ export default function EducationPage() {
           </div>
         </main>
       </motion.div>
-      </DashboardLayout>
+      {/* </DashboardLayout> */}
     </>
   );
 }

@@ -4,6 +4,15 @@
 // app/api/others/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/components/lib/db";
+export const runtime = "nodejs";
+
+import { createClient } from "@supabase/supabase-js";
+
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // server-side secure
+);
 
 export async function POST(req: Request) {
   try {
@@ -30,19 +39,30 @@ export async function POST(req: Request) {
       const skills = formData.get(`certificates[${index}][skills]`) as string;
       const file = formData.get(`certificates[${index}][fileUrl]`) as File | null;
 
+      let fname
       // TODO: save file somewhere (S3, Cloudinary, local disk, etc.)
-      let filePath = null;
-      if (file) {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        // Example: save to local `uploads/`
-        const fs = require("fs");
-        const path = `./uploads/${file.name}`;
-        fs.writeFileSync(path, buffer);
-        filePath = path;
+        if (`certificates[${index}][fileUrl]`.endsWith("[fileUrl]") && file instanceof File) {
+         fname = `certs/${phone}/${Date.now()}-${file.name}`;
+        const buf = Buffer.from(await file.arrayBuffer());
+        const { error } = await supabase.storage.from("docs").upload(fname, buf, {
+          contentType: file.type || "application/pdf",
+          upsert: false,
+        });
+        if (error) throw error;
+        // uploads.push(fname);
       }
+      // let filePath = null;
+      // if (file) {
+      //   const arrayBuffer = await file.arrayBuffer();
+      //   const buffer = Buffer.from(arrayBuffer);
+      //   // Example: save to local `uploads/`
+      //   const fs = require("fs");
+      //   const path = `./uploads/${file.name}`;
+      //   fs.writeFileSync(path, buffer);
+      //   filePath = path;
+      // }
 
-      certificates.push({ title, dateIssued, skills, filePath });
+      certificates.push({ title, dateIssued, skills, fname });
       index++;
     }
 

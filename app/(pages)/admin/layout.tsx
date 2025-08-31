@@ -11,7 +11,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     // return <>{children}</>;
   }
 
-  // Only allow Admin
+    // Only allow Admin
+  if (session?.user?.role === null) {
+    redirect(`/users/${session?.user?.id}`);
+  }
+
+  // // Only allow Admin
   if (session?.user?.role !== "admin") {
     redirect(`/users/${session?.user?.id}`);
   }

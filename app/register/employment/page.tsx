@@ -738,7 +738,7 @@ export default function EmploymentPage() {
 
   return (
     <>
-    <DashboardLayout>
+    {/* <DashboardLayout> */}
       <Toaster />
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -1041,7 +1041,7 @@ export default function EmploymentPage() {
           </div>
         </main>
       </motion.div>
-      </DashboardLayout>
+      {/* </DashboardLayout> */}
     </>
   );
 }

@@ -37,8 +37,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const {data: session} = useSession()
-  const currentUserRole: Role = session?.user?.role;
+  const currentUserRole: Role = session?.user?.role===null?'staff':session?.user?.role;
 
+  console.log("current user role",currentUserRole)
   const isActive = (href: string) => pathname === href;
   const menu = menuByRole[currentUserRole];
   return (

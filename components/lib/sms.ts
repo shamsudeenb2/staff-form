@@ -7,12 +7,24 @@
 // lib/sms.ts
 import fetch from "node-fetch";
 
+import twilio from 'twilio';
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const client = twilio(accountSid, authToken);
+
 const USE_TERMII = process.env.USE_TERMII === "true";
 
-export async function sendSmsMock(phone: string, message: string) {
+export async function sendSmsTwilio(phone: string, message: string) {
   // Development mock: log to server console
-  console.log(`📲 [MOCK SMS] to ${phone}: ${message}`);
-  return { success: true };
+ 
+  await client.messages.create({
+    body: message,
+    from: process.env.TWILIO_FROM_NUMBER,
+    to: phone,
+});
+console.log(`📲 [Twilio SMS] to ${phone}: ${message}`);
+return { success: true };
 }
 
 export async function sendSmsTermii(phone: string, message: string) {
@@ -46,5 +58,5 @@ export async function sendSmsTermii(phone: string, message: string) {
 
 export async function sendSms(phone: string, message: string) {
   if (USE_TERMII) return sendSmsTermii(phone, message);
-  return sendSmsMock(phone, message);
+  return sendSmsTwilio(phone, message);
 }
