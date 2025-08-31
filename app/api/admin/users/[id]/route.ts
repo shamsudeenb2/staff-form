@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/components/lib/db"; // adjust if your prisma client path differs
 
-type RouteContext = {
+type Params = {
   params: { id: string };
 };
 
-export async function GET(_req: Request, { params }: RouteContext) {
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: params.id },
