@@ -20,8 +20,8 @@ export default function ValidatePhone() {
   const regex = /^(\+234)[7-9][0-9]{9}$/;
   return regex.test(phoneNumber);
 };
-  const handleInputChange = (event) => {
-    const value = event.target.value;
+  const handleInputChange = (value:string) => {
+   
     setPhone(value);
     console.log("name them",validatePhoneNumber(value))
     if (validatePhoneNumber(value)) {
@@ -97,7 +97,7 @@ export default function ValidatePhone() {
               type="tel"
               placeholder="e.g. +2348012345678"
               value={phone}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange(e.target.value)}
               className="border border-gray-300 w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             />
             {error && <p className="text-red-600 text-sm">{error}</p>}
