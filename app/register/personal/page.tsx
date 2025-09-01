@@ -72,7 +72,7 @@ const isValidISODate = (value?: string) => {
 const displayDate = (iso?: string) =>
   isValidISODate(iso) ? format(new Date(iso as string), "yyyy-MM-dd") : "";
 
-const draftKey = (phone: string | null | undefined) =>
+const draftKey = (phone: string | null ) =>
   phone ? `draft:${phone}:personal` : null;
 
 /* ------------------------------ Reusable Parts ---------------------------- */

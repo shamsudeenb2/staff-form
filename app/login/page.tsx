@@ -9,7 +9,6 @@ import { Toaster, toast } from "sonner";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 import { signIn } from "next-auth/react";
-
 import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/Card";
 import { Input } from "@/components/ui/input";
