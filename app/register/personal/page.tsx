@@ -150,7 +150,7 @@ export default function PersonalDataPage() {
       firstName: "",
       lastName: "",
       email: "",
-      phone: phone,
+      phone: "",
       dob: "",
       gender: "MALE",
       maritalStatus: "SINGLE",
@@ -177,7 +177,7 @@ export default function PersonalDataPage() {
       const raw = key ? window.localStorage.getItem(key) : null;
       if (raw) {
         const parsed = JSON.parse(raw);
-        reset(parsed);
+        setValue("phone",parsed);
       }
     } catch {
       // ignore parse errors

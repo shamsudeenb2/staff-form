@@ -41,15 +41,25 @@ export default function OtpVerification() {
     }
   };
 
-  //  const handleChange = (value: string, index: number) => {
-  //   const newOtp = [...otp];
-  //   newOtp[index] = value;
-  //   setOtp(newOtp);
-
-  //   if (value && index < 5) {
-  //     inputs.current[index + 1]?.focus();
-  //   }
-  // };
+  const handleKeyDown = (e:React.KeyboardEvent, index:number) => {
+  // Backspace: move to previous box and clear current box
+  const target = e.target as HTMLInputElement;
+  if (e.key === "Backspace" && index > 0) {
+    // If current box is empty, focus on the previous box
+    if (!target.value) {
+      inputs.current[index - 1]?.focus();
+      e.preventDefault(); // Prevents the browser's default behavior
+    }
+  }
+  // Left arrow key: move to previous box
+  else if (e.key === "ArrowLeft" && index > 0) {
+    inputs.current[index - 1]?.focus();
+  }
+  // Right arrow key: move to next box
+  else if (e.key === "ArrowRight" && index < 5) {
+    inputs.current[index + 1]?.focus();
+  }
+};
 
 
   async function handleVerify(e: React.FormEvent) {
@@ -131,14 +141,26 @@ export default function OtpVerification() {
             <div className="flex justify-center gap-2 mb-4">
               {otp.map((digit, i) => (
                 <input
-                  key={i}
-                  ref={(el) => (inputs.current[i] = el)}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(e.target.value, i)}
-                  className="w-12 h-12 text-center border rounded text-lg"
-                />
+                    key={i}
+                    type="text"
+                    maxLength={1}
+                    value={otp[i]}
+                    onChange={(e) => handleChange(e.target.value, i)}
+                    onKeyDown={(e) => handleKeyDown(e, i)}
+                    ref={(el) => {
+                      // The key change: simply assign the element without returning it
+                      inputs.current[i] = el;
+                    }}
+                  />
+                // <input
+                //   key={i}
+                //   ref={(el) => (inputs.current[i] = el)}
+                //   type="text"
+                //   maxLength={1}
+                //   value={digit}
+                //   onChange={(e) => handleChange(e.target.value, i)}
+                //   className="w-12 h-12 text-center border rounded text-lg"
+                // />
               ))}
             </div>
             <div className="flex items-center justify-center gap-1 text-gray-500 text-sm">
