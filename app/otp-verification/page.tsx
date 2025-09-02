@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Card from "@/components/Card";
 import OtpInput from "@/components/OtpInput";
 import { motion } from "framer-motion";
+import OtpInputs from "@/components/OtpInputs";
 
 
 export default function OtpVerification() {
@@ -102,7 +103,7 @@ export default function OtpVerification() {
             <h1 className="text-xl font-bold text-center text-red-600">Your OTP has expired</h1>
             <p className="text-gray-600 text-center my-4">Please try again</p>
             <a
-              href="/validate-phone"
+              href="/"
               className="block w-full text-center bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition"
             >
               Retry
@@ -139,29 +140,7 @@ export default function OtpVerification() {
               className="border border-gray-300 w-full p-3 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
             /> */}
             <div className="flex justify-center gap-2 mb-4">
-              {otp.map((digit, i) => (
-                <input
-                    key={i}
-                    type="text"
-                    maxLength={1}
-                    value={otp[i]}
-                    onChange={(e) => handleChange(e.target.value, i)}
-                    onKeyDown={(e) => handleKeyDown(e, i)}
-                    ref={(el) => {
-                      // The key change: simply assign the element without returning it
-                      inputs.current[i] = el;
-                    }}
-                  />
-                // <input
-                //   key={i}
-                //   ref={(el) => (inputs.current[i] = el)}
-                //   type="text"
-                //   maxLength={1}
-                //   value={digit}
-                //   onChange={(e) => handleChange(e.target.value, i)}
-                //   className="w-12 h-12 text-center border rounded text-lg"
-                // />
-              ))}
+              <OtpInputs otp={otp} setOtp={setOtp}/>
             </div>
             <div className="flex items-center justify-center gap-1 text-gray-500 text-sm">
               <Clock size={16} /> Time left: {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
