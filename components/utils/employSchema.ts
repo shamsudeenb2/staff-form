@@ -88,4 +88,9 @@ export const EmploymentSchema = z.object({
   previousPromotion: z.array(PrevPromotionSchema).default([]),
 });
 
-export type EmploymentFormType = z.infer<typeof EmploymentSchema>;
+// export type EmploymentFormType = z.infer<typeof EmploymentSchema>;
+
+// Use INPUT for form types (pre-default; keys with default are optional)
+export type EmploymentFormInput = z.input<typeof EmploymentSchema>;
+// If you ever need post-parse types elsewhere:
+export type EmploymentFormOutput = z.output<typeof EmploymentSchema>;

@@ -538,7 +538,8 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import debounce from "lodash.debounce";
 
-import { EmploymentSchema, EmploymentFormType } from "@/components/utils/employSchema";
+import {   EmploymentSchema,
+  type EmploymentFormInput, } from "@/components/utils/employSchema";
 
 
 // shadcn ui
@@ -629,7 +630,7 @@ export default function EmploymentPage() {
     setValue,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<EmploymentFormType>({
+  } = useForm<EmploymentFormInput>({
     resolver: zodResolver(EmploymentSchema),
     defaultValues: {
       personnelNumber: "",
@@ -673,7 +674,7 @@ export default function EmploymentPage() {
     // Debounced save
     const debouncedSave = useMemo(
       () =>
-        debounce((values: EmploymentFormType, p?: string | null) => {
+        debounce((values: EmploymentFormInput, p?: string | null) => {
           if (!isBrowser() || !p) return;
           const key = draftKey(p);
           if (!key) return;
@@ -700,7 +701,7 @@ export default function EmploymentPage() {
   const promotionsFA = useFieldArray({ control, name: "previousPromotion" });
 
 
-  const onSubmit = async (data: EmploymentFormType) => {
+  const onSubmit = async (data: EmploymentFormInput) => {
     try {
       const p = phone || (isBrowser() ? window.localStorage.getItem("nipost_phone") : null);
       if (!p) {
