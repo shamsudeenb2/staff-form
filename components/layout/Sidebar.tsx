@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { getSession } from "@/app/config/auth";
 import { signOut, useSession } from "next-auth/react";
 
-type Role = "admin" | "supervisor" | "staff";
+type Role = "admin" | "supervisor" | "staff" ;
 
 // Example: Replace with user role from auth context or API
 
@@ -18,9 +18,6 @@ const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
   admin: [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
     { name: "Register User", href: "/admin/register", icon: UserPlus },
-    // { name: "Capture Fingerprint", href: "/admin/fingerprint-capture", icon: Fingerprint },
-    // { name: "Generate Qr-Code", href: "/admin/qr-code", icon: QrCode },
-    // { name: "Departments", href: "/departments", icon: Users },
   ],
   supervisor: [
     { name: "Dashboard", href: "/", icon: Home },
@@ -37,8 +34,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const {data: session} = useSession()
-  const currentUserRole: Role = session?.user?.role===null?'staff':session?.user?.role;
-
+  const roles: Role[] = ["admin", "supervisor", "staff"]
+  const rawRole = session?.user?.role
+//  const currentUserRole: Role = session?.user?.role ?? "staff"
+ const currentUserRole: Role = roles.includes(rawRole as Role)
+  ? (rawRole as Role)
+  : "staff"
   console.log("current user role",currentUserRole)
   const isActive = (href: string) => pathname === href;
   const menu = menuByRole[currentUserRole];
