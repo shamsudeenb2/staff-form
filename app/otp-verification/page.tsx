@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Card from "@/components/Card";
-import OtpInput from "@/components/OtpInput";
 import { motion } from "framer-motion";
 import OtpInputs from "@/components/OtpInputs";
 
@@ -132,13 +131,6 @@ export default function OtpVerification() {
           </div>
 
           <form onSubmit={handleVerify} className="space-y-4">
-            {/* <input
-              type="text"
-              placeholder="Enter 6-digit OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="border border-gray-300 w-full p-3 rounded-lg focus:ring-2 focus:ring-green-400 outline-none"
-            /> */}
             <div className="flex justify-center gap-2 mb-4">
               <OtpInputs otp={otp} setOtp={setOtp}/>
             </div>
