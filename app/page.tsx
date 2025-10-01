@@ -31,44 +31,44 @@ export default function ValidatePhone() {
   };
 
   async function handleSubmit(e: React.FormEvent) {
-    // e.preventDefault();
-    setLoading(true)
-    if (!validatePhoneNumber(phone)) {
-         setMessage('Mobile number is invalid. phone number must begin with +234.')
-         setLoading(false)
-         return
-       } 
-    setMessage("")
-    console.log("lets see the phone", validatePhone)
-    const res = await fetch("/api/otp/send", {
-      method: "POST",
-      body: JSON.stringify({validatePhone}),
-      headers: { "Content-Type": "application/json" },
-    });
+    e.preventDefault();
+    // setLoading(true)
+    // if (!validatePhoneNumber(phone)) {
+    //      setMessage('Mobile number is invalid. phone number must begin with +234.')
+    //      setLoading(false)
+    //      return
+    //    } 
+    // setMessage("")
+    // console.log("lets see the phone", validatePhone)
+    // const res = await fetch("/api/otp/send", {
+    //   method: "POST",
+    //   body: JSON.stringify({validatePhone}),
+    //   headers: { "Content-Type": "application/json" },
+    // });
 
-    const data = await res.json();
+    // const data = await res.json();
 
-    if (!res.ok){
-      console.log("res error", res)
-      setError(data.error);
-      setLoading(false)
-    }else{
-      if (data.verified) {
+    // if (!res.ok){
+    //   console.log("res error", res)
+    //   setError(data.error);
+    //   setLoading(false)
+    // }else{
+    //   if (data.verified) {
         router.push("/register/personal");
 
-    } else if (data.success) {
-      localStorage.setItem("phone", validatePhone);
+  //   } else if (data.success) {
+  //     localStorage.setItem("phone", validatePhone);
 
-      router.push("/otp-verification");
-    } else if (data.done) {
-      localStorage.setItem("validatePhone", validatePhone);
-      router.push("/login");
-    }
-    else {
-      setError("Something went wrong");
-      setLoading(false)
-    }  
-  }
+  //     router.push("/otp-verification");
+  //   } else if (data.done) {
+  //     localStorage.setItem("validatePhone", validatePhone);
+  //     router.push("/login");
+  //   }
+  //   else {
+  //     setError("Something went wrong");
+  //     setLoading(false)
+  //   }  
+  // }
     }
 
     // const data = await res.json();
@@ -85,7 +85,7 @@ export default function ValidatePhone() {
       >
         <Card>
           <div className="text-center mb-4">
-            <Phone className="mx-auto text-blue-600" size={40} />
+            {/* <Phone className="mx-auto text-blue-600" size={40} />
             <h1 className="text-2xl font-bold text-gray-800 mt-2">Phone Verification</h1>
             <p className="text-gray-500 text-sm">
               Enter your phone number to receive an OTP
@@ -99,16 +99,16 @@ export default function ValidatePhone() {
               value={phone}
               onChange={(e) => handleInputChange(e.target.value)}
               className="border border-gray-300 w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-            />
-            {error && <p className="text-red-600 text-sm">{error}</p>}
-            {message && <p className="text-red-600 text-sm">{message}</p>}
+            /> */}
+            {/* {error && <p className="text-red-600 text-sm">{error}</p>}
+            {message && <p className="text-red-600 text-sm">{message}</p>} */}
 
             <button
               disabled={loading}
               onClick={handleSubmit}
               className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
             >
-              <Send size={18} /> {loading?"sending ...": "Send OTP"}
+              <Send size={18} /> {loading?"sending ...": "Click to start filling the form"}
             </button>
           </div>
         </Card>

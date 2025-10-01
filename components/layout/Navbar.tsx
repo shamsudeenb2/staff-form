@@ -7,13 +7,13 @@ import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const {data: session} = useSession()
-  console.log("session data navbar",session)
+  
   return (
     <header className="fixed top-0 left-0 lg:left-0 right-0 h-16 bg-white shadow flex items-center justify-between px-6 z-20">
       {session?(
       <>
       <div className="absolute left-1/2 transform -translate-x-1/2 text-xl font-bold text-gray-700">
-       Nigerian Postal Service log in
+       Nigerian Postal Service
       </div>
       {/* Centered App Name */}
         <div className="ml-auto flex items-center gap-6">
@@ -36,13 +36,13 @@ export default function Navbar() {
         </div>
       </div>
       </>):(<div>
-            <div className="absolute left-1/2 transform -translate-x-1/2 text- center text-xl font-bold text-gray-700">
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center text-xl font-bold text-gray-700">
              Nigerian Postal Service
             </div>
             <button onClick={()=>signIn('/')}
              className={cn(" flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-blue-700 hover:font-medium")}>
              <LogIn className="w-5 h-5" />
-              signIn
+              <p className="hidden sm:inline">signIn</p>
             </button> 
           </div>)}
     </header>

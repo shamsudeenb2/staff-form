@@ -9,9 +9,10 @@ import { prisma } from "@/components/lib/db";
 // const otpRequests: Record<string, { count: number; lastRequest: number }> = {};
 
 export async function POST(req: NextRequest) {
-  console.log("lets see the phone")
+  
   try {
     const { validatePhone } = await req.json();
+    console.log("lets see the phone", validatePhone)
     
   if (!validatePhone) return NextResponse.json({ error: "validatePhone required" }, { status: 400 });
 

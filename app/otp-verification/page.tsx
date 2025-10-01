@@ -116,7 +116,7 @@ export default function OtpVerification() {
 
   return (
     <>
-      <Navbar breadcrumbs={[{ label: "Validate Phone", href: "/validate-phone" }, { label: "OTP Verification" }]} />
+      <Navbar breadcrumbs={[{ label: "Validate Phone", href: "/" }, { label: "OTP Verification" }]} />
       <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
          <motion.div
           className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full"

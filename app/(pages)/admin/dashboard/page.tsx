@@ -209,7 +209,7 @@ export default function AdminDashboard() {
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
       <div className="px-4 md:px-8 py-6 max-w-[1400px] mx-auto">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => { setStation("ALL"); setGrade("ALL"); setQ(""); }}>
               <RefreshCcw className="w-4 h-4 mr-2" /> Reset
