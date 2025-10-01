@@ -108,7 +108,7 @@ export default function ValidatePhone() {
               onClick={handleSubmit}
               className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
             >
-              <Send size={18} /> {loading?"sending ...": "Click to start filling the form"}
+              <Send size={18} /> {loading?"sending ...": "Click to start filling your information"}
             </button>
           </div>
         </Card>

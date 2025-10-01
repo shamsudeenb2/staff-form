@@ -34,12 +34,12 @@
 
 "use client";
 import Link from "next/link";
-import { Home, ChevronRight } from "lucide-react";
+import { Home, ChevronRight, LogIn } from "lucide-react";
 
 export default function Navbar({ breadcrumbs = [] }: { breadcrumbs?: { label: string; href?: string }[] }) {
   return (
-    <nav className="w-full bg-white shadow-sm border-b">
-      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4 text-gray-700">
+    <nav className="w-full bg-white shadow-sm border-b flex">
+      <div className="max-w-4xl mx-auto px-4 py-3 flex  gap-4 text-gray-700">
         <Link href="/" className="flex items-center gap-2 text-blue-600 hover:text-blue-800">
           <Home size={18} /> <span className="font-semibold">NIPOST</span>
         </Link>
@@ -50,7 +50,11 @@ export default function Navbar({ breadcrumbs = [] }: { breadcrumbs?: { label: st
             </span>
           ))}
         </div>
+        
       </div>
+      <Link href="/login" className="flex items-center gap-2 text-blue-400 mr-5 hover:text-blue-400">
+        <LogIn size={16} /><span className="hidden sm:inline">Login</span>
+      </Link>
     </nav>
   );
 }

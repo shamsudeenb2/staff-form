@@ -9,7 +9,8 @@ import { Toaster, toast } from "sonner";
 import { motion } from "framer-motion";
 import debounce from "lodash.debounce";
 import { format } from "date-fns";
-import { Upload, FileIcon } from 'lucide-react';
+import { ArrowBigLeft } from "lucide-react";
+import Link from "next/link";
 
 
 import  DateField  from "@/components/DateInput";
@@ -205,10 +206,8 @@ export default function OthersPage() {
       <Toaster />
       <Navbar
         breadcrumbs={[
-          { label: "Personal Data", href: "/register/personal" },
-          { label: "Education History", href: "/register/education" },
-          { label: "Employment History ", href: "/register/employment"  },
-          { label: "Other Information" },
+          { label: "Employment", href: "/register/employment"  },
+          { label: "Others", },           
 
         ]}
       />
@@ -318,7 +317,10 @@ export default function OthersPage() {
                   </Button>
                 </div>
               </div>
-                <div className="flex gap-3">
+                <div className="flex justify-between gap-3">
+                 <Link href="/register/employment" className="p-1 text-center bg-black text-white">
+                  <ArrowBigLeft/>
+                </Link>
                     <Button type="submit" disabled={isSubmitting}
                      className="bg-green-500 text-white px-4 py-2 rounded">
                         {isSubmitting ? "Submitting..." : "Submit"}
