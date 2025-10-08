@@ -30,9 +30,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not Found" }, { status: 404 });
     }
 
-    if (!user.phoneVerified) {
-      return NextResponse.json({ error: "You have not validate you phone number" }, { status: 404 });
-    }
+    // if (!user.phoneVerified) {
+    //   return NextResponse.json({ error: "You have not validate you phone number" }, { status: 404 });
+    // }
 
     // Create Education
     const education = await prisma.educationHistory.upsert({

@@ -13,12 +13,27 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
     // Only allow Admin
   if (session?.user?.role == null) {
-    redirect(`/users/${session?.user?.id}`);
+    const baseUrl = process.env.NEXTAUTH_URL;
+      const userId = session?.user?.id;
+    if (userId) {
+        // Construct the URL string using the relative path
+        redirect(`/users/${userId}`);
+    } else {
+        // Handle case where user ID is missing (e.g., redirect to login)
+        redirect('/login'); 
+    }
   }
 
   // // Only allow Admin
   if (session?.user?.role !== "admin") {
-    redirect(`/users/${session?.user?.id}`);
+        const userId = session?.user?.id;
+    if (userId) {
+        // Construct the URL string using the relative path
+        redirect(`/users/${userId}`);
+    } else {
+        // Handle case where user ID is missing (e.g., redirect to login)
+        redirect('/auth/signin'); 
+    }
   }
 
   return <>{children}</>;

@@ -34,9 +34,9 @@ export async function POST(req: Request) {
     }
 
     // optional: allow only if phoneVerified
-    if (!user.phoneVerified) {
-      return NextResponse.json({ error: "Phone not verified" }, { status: 403 });
-    }
+    // if (!user.phoneVerified) {
+    //   return NextResponse.json({ error: "Phone not verified" }, { status: 403 });
+    // }
 
     // Hash password with bcrypt (bcryptjs)
     const saltRounds = 12;

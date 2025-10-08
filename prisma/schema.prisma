@@ -32,7 +32,7 @@ model User {
   phoneVerified      Boolean             @default(false)
   email              String?             @unique
   password           String?
-  role               String?             
+  role               String?             @default("staff")
   done               Boolean?            @default(false)
   personalData       PersonalData?
   educationHistory   EducationHistory?

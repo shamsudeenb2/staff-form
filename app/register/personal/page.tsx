@@ -141,7 +141,7 @@ export default function PersonalDataPage() {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors,isSubmitting },
     setValue,
     reset,
   } = useForm<PersonalFormData>({
@@ -479,9 +479,10 @@ export default function PersonalDataPage() {
                   type="button"
                   variant="secondary"
                   onClick={() => handleSubmit(onSubmit)()}
+                  disabled={isSubmitting}
                   className="bg-green-500 text-white px-4 py-2 rounded"
                 >
-                  Save & Continue
+                  {isSubmitting ? "Saving..." : "Save & Continue"}
                 </Button>
               </div>
             </form>

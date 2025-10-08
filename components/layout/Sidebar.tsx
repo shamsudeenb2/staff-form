@@ -8,13 +8,24 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { getSession } from "@/app/config/auth";
 import { signOut, useSession } from "next-auth/react";
+import Image from 'next/image';
 
 type Role = "admin" | "supervisor" | "staff" ;
 
 // Example: Replace with user role from auth context or API
 
 
-const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
+
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const {data: session} = useSession()
+  const roles: Role[] = ["admin", "supervisor", "staff"]
+  const rawRole = session?.user?.role
+   const userId = session?.user?.id;
+
+  const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
   admin: [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
     { name: "Register User", href: "/admin/register", icon: UserPlus },
@@ -26,16 +37,9 @@ const menuByRole: Record<Role, { name: string; href: string; icon: any }[]> = {
   ],
   staff: [
     { name: "Dashboard", href: "/users", icon: Home },
-    { name: "Bio Data", href: "/users/", icon: User2 },
+    { name: "Bio Data",  href: userId ? `/users/${userId}` : '/users', icon: User2},
   ],
 };
-
-export default function Sidebar() {
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const {data: session} = useSession()
-  const roles: Role[] = ["admin", "supervisor", "staff"]
-  const rawRole = session?.user?.role
 //  const currentUserRole: Role = session?.user?.role ?? "staff"
  const currentUserRole: Role = roles.includes(rawRole as Role)
   ? (rawRole as Role)
@@ -63,8 +67,13 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="p-6 border-b border-blue-700">
+          {/* <Image
+            src="../app/icons/nipost" 
+            alt="Company Logo" 
+            width={300} 
+            height={150} 
+          /> */}
           <div className="text-2xl font-bold">NIPOST</div>
-          {/* <p className="text-sm text-blue-200">Attendance System</p> */}
         </div>
 
         {/* Animated menu */}

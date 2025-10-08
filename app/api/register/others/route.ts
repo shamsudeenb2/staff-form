@@ -18,8 +18,6 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const phone = formData.get(`phone`) as string;
-     
-    console.log("name are ", phone)
 
     // Extract dynamic certificates        
    const user = await prisma.user.findUnique({ where: { phone:phone } });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Toaster } from "sonner";
@@ -97,8 +97,8 @@ const isValidDate = (d?: string | null) => {
 const fmt = (d?: string | null) => (isValidDate(d) ? format(new Date(d!), "yyyy-MM-dd") : "—");
 const show = (v: any) => (v !== undefined && v !== null && String(v).trim() !== "" ? String(v) : "—");
 
-export default function AdminUserDetailsPage() {
-  const params = useParams<{ id: string }>();
+export default function UserDetailsPage(params:any) {
+//   const params = useParams<{ id: string }>();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -185,24 +185,6 @@ export default function AdminUserDetailsPage() {
                 >
                   Next
                 </Button>
-                {/* <Button
-                  variant={page === 3 ? "default" : "outline"}
-                  onClick={() => setPage(3)}
-                >
-                  Page 3
-                </Button>
-                <Button
-                  variant={page === 4 ? "default" : "outline"}
-                  onClick={() => setPage(4)}
-                >
-                  Page 4
-                </Button>
-                <Button
-                  variant={page === 5 ? "default" : "outline"}
-                  onClick={() => setPage(5)}
-                >
-                  Page 5
-                </Button> */}
               </div>
             </div>
 

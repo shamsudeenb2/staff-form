@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
     const { phone } = await req.json();
 
-    const user = await prisma.user.findUnique({ where: { phone, phoneVerified:true } });
+    const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) {
           return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
         }
