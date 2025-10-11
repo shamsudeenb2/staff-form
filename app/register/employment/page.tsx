@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import debounce from "lodash.debounce";
 import { ArrowBigLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { isValid as isValidDate, differenceInYears } from "date-fns";
 
 import {   EmploymentSchema,
   type EmploymentFormInput, } from "@/components/utils/employSchema";
@@ -81,6 +82,18 @@ function DateField({
       </Popover>
     </div>
   );
+}
+
+/** Helper: returns whole full years between the date and now.
+ *  - returns 0 for invalid or future dates
+ */
+function calculateYearsInService(dateIsoOrDate: string | Date | undefined | null) {
+  if (!dateIsoOrDate) return 0;
+  const d = typeof dateIsoOrDate === "string" ? new Date(dateIsoOrDate) : dateIsoOrDate;
+  if (!isValidDate(d)) return 0;
+  const now = new Date();
+  if (d > now) return 0;
+  return Math.max(0, differenceInYears(now, d));
 }
 
 /* ---------------------------------- Page ---------------------------------- */
@@ -174,6 +187,19 @@ export default function EmploymentPage() {
   const stationsFA = useFieldArray({ control, name: "previousStations" });
   const jobsFA = useFieldArray({ control, name: "previousJobsHandled" });
   const promotionsFA = useFieldArray({ control, name: "previousPromotion" });
+
+  
+  // IMPORTANT: compute yearsInService when dateFirstAppointed changes (both when user selects and when draft restores)
+  useEffect(() => {
+    const iso = watched.dateFirstAppointed;
+    if (!iso) return;
+    const yrs = calculateYearsInService(iso);
+    // only update if different to avoid unnecessary form dirty toggles
+    if (typeof watched.yearsInService === "undefined" || Number(watched.yearsInService) !== yrs) {
+      setValue("yearsInService", yrs, { shouldValidate: true, shouldDirty: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watched.dateFirstAppointed]); 
 
 
   const onSubmit = async (data: EmploymentFormInput) => {
@@ -285,10 +311,20 @@ export default function EmploymentPage() {
               <section>
                 <h2 className="font-semibold mb-3">Appointments & Promotions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <DateField
+                  {/* <DateField
                     label="Date First Appointed"
                     value={watched?.dateFirstAppointed}
                     onSelectISO={(iso) => setValue("dateFirstAppointed", iso, { shouldValidate: true })}
+                  /> */}
+                  <DateField
+                    label="Date First Appointed"
+                    value={watched.dateFirstAppointed}
+                    onSelectISO={(iso) => {
+                      setValue("dateFirstAppointed", iso, { shouldValidate: true, shouldDirty: true });
+                      // compute years and populate yearsInService immediately
+                      const yrs = calculateYearsInService(iso);
+                      setValue("yearsInService", yrs, { shouldValidate: true, shouldDirty: true });
+                    }}
                   />
                   <DateField
                     label="Date of Present Appointment"
