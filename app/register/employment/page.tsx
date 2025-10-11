@@ -426,6 +426,7 @@ export default function EmploymentPage() {
                   <div>
                     <Label>Years in Service</Label>
                     <Input type="number" {...register("yearsInService", { valueAsNumber: true })} />
+                    disabled={true}
                     {errors.yearsInService && (
                       <p className="text-red-600 text-sm mt-1">{errors.yearsInService.message}</p>
                     )}
