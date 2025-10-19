@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, UserPlus, Fingerprint, Menu, Users, QrCode, LogOut, User2 } from "lucide-react";
+import { Home, UserPlus, Fingerprint, Menu, Users, BookAlertIcon, LogOut, User2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -29,6 +29,7 @@ export default function Sidebar() {
   admin: [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
     { name: "Register User", href: "/admin/register", icon: UserPlus },
+    { name: "Open Monthly Return", href: "/admin/submission-window", icon: BookAlertIcon },
   ],
   supervisor: [
     { name: "Dashboard", href: "/", icon: Home },
@@ -38,13 +39,13 @@ export default function Sidebar() {
   staff: [
     { name: "Dashboard", href: "/users", icon: Home },
     { name: "Bio Data",  href: userId ? `/users/${userId}` : '/users', icon: User2},
+    { name: "Monthly return", href: "/users/submissions", icon: BookAlertIcon },
   ],
 };
 //  const currentUserRole: Role = session?.user?.role ?? "staff"
  const currentUserRole: Role = roles.includes(rawRole as Role)
   ? (rawRole as Role)
   : "staff"
-  console.log("current user role",currentUserRole)
   const isActive = (href: string) => pathname === href;
   const menu = menuByRole[currentUserRole];
   return (

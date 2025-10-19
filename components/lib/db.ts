@@ -8,12 +8,19 @@
 // export const prisma = global.prisma ?? new PrismaClient();
 // if (process.env.NODE_ENV !== "production") global.prisma = prisma;
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SubmissionStatus } from '@prisma/client';
 
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  submitStatus: SubmissionStatus | undefined
 };
+
+export const submitStatus =
+  globalForPrisma.submitStatus ??
+  new PrismaClient({
+    log: ["query"],
+  });
 
 export const prisma =
   globalForPrisma.prisma ??

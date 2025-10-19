@@ -38,6 +38,7 @@ model User {
   educationHistory   EducationHistory?
   employmentData     EmploymentData?
   otherData          OtherData?
+  monthlySubmissionData     MonthlySubmission[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -167,4 +168,44 @@ model OtherData {
   content  Json?
 
   user     User   @relation(fields: [userId], references: [id])
+}
+
+enum SubmissionStatus {
+  DRAFT
+  FINAL
+}
+
+model MonthlySubmission {
+  id                  String           @id @default(uuid())
+  userId              String
+  yearMonth           String           // format "YYYY-MM"
+  data                Json             // full snapshot of the submitted form (personal+education+employment+others as JSON)
+  status              SubmissionStatus @default(DRAFT)
+  previousSubmissionId String? 
+  diff                Json?            // { added: {...}, removed: {...}, changed: {...} } - computed at finalize
+  createdBy           String?          // user id who submitted (usually same as userId)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  user                User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, yearMonth])
+  @@index([yearMonth])
+  @@index([status])
+}
+
+model SubmissionWindow {
+  id        String   @id @default(uuid())
+  yearMonth String   // "YYYY-MM"
+  isOpen    Boolean  @default(false)
+  openAt    DateTime?
+  closeAt   DateTime?
+  openedBy  String?  // admin id
+  closedBy  String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([yearMonth])
+  @@index([isOpen])
 }

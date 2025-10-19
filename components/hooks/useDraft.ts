@@ -1,31 +1,51 @@
-// hooks/useDraft.ts
-import { useState, useEffect } from "react";
+// components/lib/combinedDraft.ts
+export type CombinedDraft = {
+  personal?: any;
+  education?: any;
+  employment?: any;
+  others?: any;
+};
 
-export function useDraft(phone: string , page: string) {
-  const [draft, setDraft] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+const isBrowser = () => typeof window !== "undefined";
 
-  useEffect(() => {
-    if (phone) {
-      loadDraft();
-    }
-  }, [phone, page]);
+/**
+ * localStorage key for a user's combined draft
+ */
+export const draftKeyFor = (userId?: string | null) =>
+  userId ? `nipost:user:${userId}:draft` : null;
 
-  async function saveDraft(data: any) {
-    await fetch("/api/register/draft", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, page, data }),
-    });
+export function loadCombinedDraft(userId?: string | null): CombinedDraft | null {
+  if (!isBrowser() || !userId) return null;
+  const key = draftKeyFor(userId);
+  if (!key) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as CombinedDraft;
+  } catch (e) {
+    console.warn("loadCombinedDraft parse failed:", e);
+    return null;
   }
+}
 
-  async function loadDraft() {
-    setLoading(true);
-    const res = await fetch(`/api/register/draft?phone=${phone}&page=${page}`);
-    const json = await res.json();
-    if (json?.data) setDraft(json.data);
-    setLoading(false);
+export function saveCombinedDraft(userId: string, patch: Partial<CombinedDraft>) {
+  if (!isBrowser() || !userId) return;
+  const key = draftKeyFor(userId)!;
+  try {
+    const existing = loadCombinedDraft(userId) || {};
+    const merged = { ...existing, ...patch };
+    window.localStorage.setItem(key, JSON.stringify(merged));
+  } catch (e) {
+    console.warn("saveCombinedDraft failed:", e);
   }
+}
 
-  return { draft, loading, saveDraft, loadDraft };
+export function clearCombinedDraft(userId?: string | null) {
+  if (!isBrowser() || !userId) return;
+  const key = draftKeyFor(userId)!;
+  try {
+    window.localStorage.removeItem(key);
+  } catch (e) {
+    console.warn("clearCombinedDraft failed:", e);
+  }
 }
