@@ -123,7 +123,7 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="p-4 border-t border-blue-700 text-sm text-blue-200">
-          © {new Date().getFullYear()} MyCompany
+          © {new Date().getFullYear()} NIPOST
         </div>
       </aside>
 
