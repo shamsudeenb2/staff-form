@@ -162,7 +162,7 @@ export default function PersonalDataPage() {
       penComNo: "",
       nextOfKin: "",
       senatorialDistrict: "",
-      nextOfKinPhone: "",
+      nextOfKinPhone: "", 
     },
   });
 
@@ -170,19 +170,22 @@ export default function PersonalDataPage() {
   const watchedState = watch("state");
 
   // Load draft when phone is ready
-  // useEffect(() => {
-  //   if (!phone || !isBrowser()) return;
-  //   try {
-  //     const key = draftKey(phone);
-  //     const raw = key ? window.localStorage.getItem(key) : null;
-  //     if (raw) {
-  //       const parsed = JSON.parse(raw);
-  //       setValue("phone",parsed);
-  //     }
-  //   } catch {
-  //     // ignore parse errors
-  //   }
-  // }, [phone, reset]);
+    // Load draft when phone is ready
+      useEffect(() => {
+        if (!phone || !isBrowser()) return;
+        try {
+          const key = draftKey(phone);
+          const raw = key ? window.localStorage.getItem(key) : null;
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            reset(parsed);
+            toast.success("Loaded saved draft");
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }, [phone, reset]);
+
 
   // Keep LGA list in sync with state
   useEffect(() => {

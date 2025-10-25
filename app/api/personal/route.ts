@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     let user;
     try {
       user = await prisma.user.upsert({
-        where: { phone: normalizedPhone, phoneVerified: true },
+        where: { phone: normalizedPhone,},
         create: {
           phone: normalizedPhone,
           email: email || null,
