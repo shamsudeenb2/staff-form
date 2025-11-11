@@ -318,7 +318,7 @@ export default function OthersPage() {
                 </div>
               </div>
                 <div className="flex justify-between gap-3">
-                 <Link href="/register/employment" className="p-1 text-center bg-black text-white">
+                 <Link href="/register/employment" className="p-1  text-center bg-black text-white">
                   <ArrowBigLeft/>
                 </Link>
                     <Button type="submit" disabled={isSubmitting}

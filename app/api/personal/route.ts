@@ -149,3 +149,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const phone = url.searchParams.get("phone") ?? "";
+
+    
+
+    const user = await prisma.user.findUnique({
+        where:{phone:phone,done:true}})
+
+        console.log("name it now", user, phone)
+
+     const items = await prisma.personalData.findUnique({
+        where:{userId: user?.id}})
+
+    return NextResponse.json({ ok: true, items }, { status: 200 });
+  } catch (err) {
+    console.error("GET /api/trips error", err);
+    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+  }
+}
+
+

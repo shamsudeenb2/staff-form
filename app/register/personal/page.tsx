@@ -129,11 +129,11 @@ export default function PersonalDataPage() {
 
   // phone is read client-side only
   const [phone, setPhone] = useState<string | null>(null);
-  useEffect(() => {
-    if (!isBrowser()) return;
-    const p = window.localStorage.getItem("nipost_phone");
-    setPhone(p);
-  }, []);
+  // useEffect(() => {
+  //   if (!isBrowser()) return;
+  //   const p = window.localStorage.getItem("nipost_phone");
+  //   setPhone(p);
+  // }, []);
 
   const [lgas, setLgas] = useState<string[]>([]);
 
@@ -168,23 +168,11 @@ export default function PersonalDataPage() {
 
   const watched = watch();
   const watchedState = watch("state");
+  const watchedPhone = watch("phone");
 
   // Load draft when phone is ready
     // Load draft when phone is ready
-      useEffect(() => {
-        if (!phone || !isBrowser()) return;
-        try {
-          const key = draftKey(phone);
-          const raw = key ? window.localStorage.getItem(key) : null;
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            reset(parsed);
-            toast.success("Loaded saved draft");
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }, [phone, reset]);
+
 
 
   // Keep LGA list in sync with state
@@ -203,28 +191,45 @@ export default function PersonalDataPage() {
   };
 
   // Debounced draft save (per phone)
-  const debouncedSave = useMemo(
-    () =>
-      debounce((values: PersonalFormData, p?: string | null) => {
-        if (!isBrowser() || !p) return;
-        const key = draftKey(p);
-        if (!key) return;
-        try {
-          window.localStorage.setItem(key, JSON.stringify(values));
-        } catch {
-          // quota or other storage errors
-        }
-      }, 800),
-    []
-  );
+  // const debouncedSave = useMemo(
+  //   () =>
+  //     debounce((values: PersonalFormData, p?: string | null) => {
+  //       if (!isBrowser() || !p) return;
+  //       const key = draftKey(p);
+  //       if (!key) return;
+  //       try {
+  //         window.localStorage.setItem(key, JSON.stringify(values));
+  //       } catch {
+  //         // quota or other storage errors
+  //       }
+  //     }, 800),
+  //   []
+  // );
 
-  // Auto-save draft on any change
-  useEffect(() => {
-    debouncedSave(watched, phone);
-    return () => {
-      debouncedSave.cancel();
-    };
-  }, [watched, phone, debouncedSave]);
+  // // Auto-save draft on any change
+  // useEffect(() => {
+  //   debouncedSave(watched, phone);
+  //   return () => {
+  //     debouncedSave.cancel();
+  //   };
+  // }, [watched, phone, debouncedSave]);
+
+        useEffect(() => {
+        try {
+            async function fetchTires() {
+            const res = await fetch(`/api/personal?phone=${encodeURIComponent(watchedPhone)}`);
+            const data = await res.json();
+            console.log("action type", data.items,watchedPhone)
+            if(data.ok){
+              reset(data?.items);
+              toast.success("Loaded saved draft");
+            }
+          }
+          fetchTires()            
+        } catch {
+          // ignore parse errors
+        }
+      }, [watchedPhone]);
 
   const onSubmit = async (data: PersonalFormData) => {
     try {
