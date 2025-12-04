@@ -158,9 +158,13 @@ export async function GET(req: Request) {
     
 
     const user = await prisma.user.findUnique({
-        where:{phone:phone,done:false}})
+        where:{phone:phone, done:false}})
 
-        console.log("name it now", user, phone)
+        console.log("name it now",user, phone)
+
+        if(!user){
+          return NextResponse.json({ ok: false, message:"Staff not found or completed registration" }, { status: 401 });
+        }
 
      const items = await prisma.personalData.findUnique({
         where:{userId: user?.id}})

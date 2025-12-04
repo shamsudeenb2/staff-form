@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, memo  } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -124,11 +124,11 @@ function DateInputField({
 
 /* ---------------------------------- Page ---------------------------------- */
 
-export default function PersonalDataPage() {
+ function PersonalDataPage() {
   const router = useRouter();
 
   // phone is read client-side only
-  const [phone, setPhone] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string>("");
   // useEffect(() => {
   //   if (!isBrowser()) return;
   //   const p = window.localStorage.getItem("nipost_phone");
@@ -193,12 +193,21 @@ export default function PersonalDataPage() {
   // Debounced draft save (per phone)
   // const debouncedSave = useMemo(
   //   () =>
-  //     debounce((values: PersonalFormData, p?: string | null) => {
-  //       if (!isBrowser() || !p) return;
-  //       const key = draftKey(p);
-  //       if (!key) return;
+  //     debounce((values: string) => {
+  //      console.log("values and phone", phone)
+  //       if (phone !=="") return;
   //       try {
-  //         window.localStorage.setItem(key, JSON.stringify(values));
+  //           async function fetchTires() {
+  //           const res = await fetch(`/api/personal?phone=${encodeURIComponent(values)}`);
+  //           const data = await res.json();
+  //           console.log("action type", data.items,watchedPhone)
+  //           if(data.ok){
+  //             reset(data?.items);
+  //             setPhone(values)
+  //             toast.success("Loaded saved draft");
+  //           }
+  //         }
+  //         fetchTires() 
   //       } catch {
   //         // quota or other storage errors
   //       }
@@ -206,24 +215,29 @@ export default function PersonalDataPage() {
   //   []
   // );
 
-  // // Auto-save draft on any change
+  // Auto-save draft on any change
   // useEffect(() => {
-  //   debouncedSave(watched, phone);
+  //   debouncedSave(watchedPhone);
   //   return () => {
   //     debouncedSave.cancel();
   //   };
-  // }, [watched, phone, debouncedSave]);
+  // }, [watchedPhone]);
 
-        useEffect(() => {
+      useEffect(() => {
         try {
+          
             async function fetchTires() {
+              if (phone !=="") return;
             const res = await fetch(`/api/personal?phone=${encodeURIComponent(watchedPhone)}`);
             const data = await res.json();
             console.log("action type", data.items,watchedPhone)
             if(data.ok){
+              setPhone(watchedPhone)
               reset(data?.items);
+              console.log("values and phone", phone)
               toast.success("Loaded saved draft");
             }
+            toast.error(data.message)
           }
           fetchTires()            
         } catch {
@@ -500,3 +514,6 @@ export default function PersonalDataPage() {
     </>
   );
 }
+
+
+export default PersonalDataPage
