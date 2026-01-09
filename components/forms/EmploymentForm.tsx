@@ -194,13 +194,13 @@ const EmploymentForm = forwardRef(function EmploymentForm(_, ref) {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <main className="flex justify-center p-6">
           <Card>
-            <h2 className="text-xl font-semibold mb-3">Employment</h2>
+            {/* <h2 className="text-xl font-semibold mb-3">Employment</h2> */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
               <section>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">Previous Stations</h3>
-                  <Button type="button" onClick={() => stationsFA.append({ station: "", yearsInStation: "" })}>Add</Button>
+                  <h3 className="font-medium">Add New Stations</h3>
+                  <Button type="button"  onClick={() => stationsFA.append({ station: "", yearsInStation: "" })}>Add</Button>
                 </div>
                 <div className="space-y-2">
                   {stationsFA.fields.map((f, i) => (
@@ -215,7 +215,7 @@ const EmploymentForm = forwardRef(function EmploymentForm(_, ref) {
 
               <section>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">Previous Jobs Handled</h3>
+                  <h3 className="font-medium">Add New Jobs Handling</h3>
                   <Button type="button" onClick={() => jobsFA.append({ job: "", yearsInJob: "", jobDescription: "" })}>Add</Button>
                 </div>
                 <div className="space-y-2">
@@ -234,7 +234,7 @@ const EmploymentForm = forwardRef(function EmploymentForm(_, ref) {
 
               <section>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">Previous Promotions</h3>
+                  <h3 className="font-medium">Add New Promotions</h3>
                   <Button type="button" onClick={() => promosFA.append({ rank: "", gradeLevel: "", date: "" })}>Add</Button>
                 </div>
                 <div className="space-y-2">

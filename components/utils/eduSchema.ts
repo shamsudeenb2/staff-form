@@ -16,17 +16,17 @@ const  additionalQualifications = z.object({
 });
 
 export const  EduSchema = z.object({
-  highestQualification: z.string().min(1, "Qualification name is required"),
-  institutionAttended: z.string().min(1, "Institution name is required"),
-  startYear: z.string().refine(
+  qualAt1stAppt: z.string().min(1, "Qualification name is required"),
+  institution: z.string().min(1, "Institution name is required"),
+  startDate: z.string().refine(
     (v) => !!v && new Date(v) < new Date(),
     "DOB must be in the past"
   ),
-  endYear: z.string().refine(
+  endDate: z.string().refine(
     (v) => !!v && new Date(v) < new Date(),
     "DOB must be in the past"
   ),
-  additionalQualifications: z.array(additionalQualifications).optional(),
+  addQualification: z.array(additionalQualifications).optional(),
 });
 
 export type EducationalFormType = z.infer<typeof EduSchema>;

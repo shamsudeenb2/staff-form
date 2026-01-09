@@ -38,13 +38,13 @@ export async function POST(req: Request) {
     const education = await prisma.educationHistory.upsert({
       where: { userId: user.id },
       create:{
-        qualAt1stAppt: data1.highestQualification,
-        institution:data1.institutionAttended,
-        startDate: data1.startYear,
-        endDate:data1.endYear,
+        qualAt1stAppt: data1.qualAt1stAppt,
+        institution:data1.institution,
+        startDate: data1.startDate,
+        endDate:data1.endDate,
         userId: user.id,
         addQualification: {
-          create: data1?.additionalQualifications?.map((aq: any) => ({
+          create: data1?.addQualification?.map((aq: any) => ({
             type:aq.type,
             qualification: aq.qualification,
             institution: aq.institution,
@@ -55,13 +55,13 @@ export async function POST(req: Request) {
       },
       include: { addQualification: true },
       update:{
-        qualAt1stAppt: data1.highestQualification,
-        institution:data1.institutionAttended,
-        startDate: data1.startYear,
-        endDate:data1.endYear,
+        qualAt1stAppt: data1.qualAt1stAppt,
+        institution:data1.institution,
+        startDate: data1.startDate,
+        endDate:data1.endDate,
         userId: user.id,
         addQualification: {
-          create: data1?.additionalQualifications?.map((aq: any) => ({
+          create: data1?.addQualification?.map((aq: any) => ({
             type:aq.type,
             qualification: aq.qualification,
             institution: aq.institution,
@@ -78,3 +78,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const phone = url.searchParams.get("phone") ?? "";
+
+    const user = await prisma.user.findUnique({
+        where:{phone:phone, done:true}})
+
+        console.log("name it now",user, phone)
+
+        if(!user){
+          return NextResponse.json({ ok: false, message:"Staff not found or completed registration" }, { status: 401 });
+        }
+
+     const items = await prisma.educationHistory.findUnique({
+        where:{userId: user?.id}})
+
+    return NextResponse.json({ ok: true, items }, { status: 200 });
+  } catch (err) {
+    console.error("GET /api/trips error", err);
+    return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });
+  }
+}
+

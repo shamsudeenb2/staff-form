@@ -64,6 +64,12 @@ const PrevJobSchema = z.object({
   jobDescription: z.string().min(1, "Job description is required"),
 });
 
+export const StationSchema = z.object({
+  id: z.number(), // Or .min(1) if not UUID
+  name: z.string(),
+  type: z.string(),
+});
+
 export const EmploymentSchema = z.object({
   personnelNumber: z.string().min(1, "Personnel number is required"),
   ippisNumber: z.string().min(1, "IPPIS number is required"),
@@ -75,8 +81,11 @@ export const EmploymentSchema = z.object({
   datePresentAppointment: z.iso.datetime("Use the calendar to pick a date"),
   dateLastPromotion: z.iso.datetime("Use the calendar to pick a date"),
 
+  selectedState: z.string(),
+
   rankAtFirstAppointment: z.string().min(1, "Required"),
   presentStation: z.string().min(1, "Required"),
+  standardStationId: StationSchema.shape.id,
   presentJobDescription: z.string().min(1, "Required"),
   department: z.string().min(1, "Required"),
 

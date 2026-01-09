@@ -234,6 +234,15 @@ function DateInputField({
             if(data.ok){
               setPhone(watchedPhone)
               reset(data?.items);
+              setValue("email", data.email)
+            if (isBrowser()) {
+                window.localStorage.setItem("nipost_phone", watchedPhone);
+                const key = draftKey(watchedPhone);
+                if (key) {
+                  // persist last known good draft
+                  window.localStorage.setItem(key, JSON.stringify(data));
+                }
+              }
               console.log("values and phone", phone)
               toast.success("Loaded saved draft");
             }
@@ -402,7 +411,7 @@ function DateInputField({
                 </div>
 
                 <div>
-                  <Label>State</Label>
+                  <Label>State of origin</Label>
                   <Select
                     value={watch("state") || "__unset__"}
                     onValueChange={(v) => {

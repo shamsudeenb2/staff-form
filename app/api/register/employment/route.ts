@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         datePresentAppointment: new Date(data.datePresentAppointment),
         dateLastPromotion: new Date(data.dateLastPromotion),
         rankAtFirstAppointment: data.rankAtFirstAppointment,
+        standardStationId: Number(data.standardStationId),
         presentStation: data.presentStation,
         presentJobDescription: data.presentJobDescription,
         department: data.department,
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
         datePresentAppointment: new Date(data.datePresentAppointment),
         dateLastPromotion: new Date(data.dateLastPromotion),
         rankAtFirstAppointment: data.rankAtFirstAppointment,
+        standardStationId: Number(data.standardStationId),
         presentStation: data.presentStation,
         presentJobDescription: data.presentJobDescription,
         department: data.department,
@@ -117,17 +119,17 @@ export async function POST(req: Request) {
 
 // (Optional) Allow resume-from-server on page load if you want:
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const phone = searchParams.get("phone");
-  if (!phone) return NextResponse.json({ success: false, error: "Phone required" }, { status: 400 });
+  // const { searchParams } = new URL(req.url);
+  // const phone = searchParams.get("phone");
+  // if (!phone) return NextResponse.json({ success: false, error: "Phone required" }, { status: 400 });
 
-  const user = await prisma.user.findUnique({ where: { phone } });
-  if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+  const record = await prisma.standardStation.findMany({select:{id:true, name:true}});
+  if (!record) return NextResponse.json({ success: false, error: "record not found" }, { status: 404 });
 
-  const record = await prisma.employmentData.findUnique({
-    where: { userId: user.id },
-    include: { previousStations: true, previousJobsHandled: true, previousPromotion: true },
-  });
+  // const record = await prisma.employmentData.findUnique({
+  //   where: { userId: user.id },
+  //   include: { previousStations: true, previousJobsHandled: true, previousPromotion: true },
+  // });
 
   return NextResponse.json({ success: true, data: record ?? null });
 }

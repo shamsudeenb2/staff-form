@@ -197,17 +197,17 @@ export default function EducationPage() {
   } = useForm<EducationalFormType>({
     resolver: zodResolver(EduSchema),
     defaultValues: {
-      highestQualification: "",
-      institutionAttended: "",
-      startYear: "",
-      endYear: "",
-      additionalQualifications: [],
+      qualAt1stAppt: "",
+      institution: "",
+      startDate: "",
+      endDate: "",
+      addQualification: [],
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "additionalQualifications",
+    name: "addQualification",
   });
 
   const watched = watch();
@@ -251,6 +251,29 @@ export default function EducationPage() {
       debouncedSave.cancel();
     };
   }, [watched, phone, debouncedSave]);
+
+        useEffect(() => {
+          try { 
+              async function fetchTires() {
+                
+              const p = window.localStorage.getItem("nipost_phone");
+              console.log("checking phone number",p)
+                console.log("action type",p)
+              if (!p) return;
+              const res = await fetch(`/api/register/education?phone=${encodeURIComponent(p)}`);
+              const data = await res.json();
+              console.log("action type", data.items, phone)
+              if(data.ok){
+                reset(data?.items);
+                toast.success("Loaded saved draft from database");
+              }
+              toast.error(data.message)
+            }
+            fetchTires()            
+          } catch {
+            // ignore parse errors
+          }
+        }, []);
 
   const onSubmit = async (data: EducationalFormType) => {
     if (!phone) {
@@ -307,20 +330,20 @@ export default function EducationPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <Label>Qualification At First Appointment</Label>
-                  <Input {...register("highestQualification")} />
-                  {errors.highestQualification && (
+                  <Input {...register("qualAt1stAppt")} />
+                  {errors.qualAt1stAppt && (
                     <p className="text-red-600 text-sm">
-                      {errors.highestQualification.message as string}
+                      {errors.qualAt1stAppt.message as string}
                     </p>
                   )}
                 </div>
 
                 <div>
                   <Label>Institution Attended</Label>
-                  <Input {...register("institutionAttended")} />
-                  {errors.institutionAttended && (
+                  <Input {...register("institution")} />
+                  {errors.institution && (
                     <p className="text-red-600 text-sm">
-                      {errors.institutionAttended.message as string}
+                      {errors.institution.message as string}
                     </p>
                   )}
                 </div>
@@ -328,15 +351,15 @@ export default function EducationPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <DateInputField
                     label="From"
-                    value={watched.startYear}
-                    onChange={(iso) => setValue("startYear", iso, { shouldValidate: true })}
-                    error={errors?.startYear?.message as string | undefined}
+                    value={watched.startDate}
+                    onChange={(iso) => setValue("startDate", iso, { shouldValidate: true })}
+                    error={errors?.startDate?.message as string | undefined}
                   />
                   <DateInputField
                     label="To"
-                    value={watched.endYear}
-                    onChange={(iso) => setValue("endYear", iso, { shouldValidate: true })}
-                    error={errors?.endYear?.message as string | undefined}
+                    value={watched.endDate}
+                    onChange={(iso) => setValue("endDate", iso, { shouldValidate: true })}
+                    error={errors?.endDate?.message as string | undefined}
                   />
                 </div>
               </div>

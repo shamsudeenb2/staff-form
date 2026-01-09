@@ -14,8 +14,17 @@ import { ArrowBigLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { isValid as isValidDate, differenceInYears } from "date-fns";
 
+import { nigeriaStates, getstationByState } from "@/components/lib/stationState";
+
 import {   EmploymentSchema,
   type EmploymentFormInput, } from "@/components/utils/employSchema";
+  import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectValue,
+    SelectItem,
+  } from "@/components/ui/select";
 
 
 // shadcn ui
@@ -96,12 +105,19 @@ function calculateYearsInService(dateIsoOrDate: string | Date | undefined | null
   return Math.max(0, differenceInYears(now, d));
 }
 
+interface FetchState {
+  id: number;
+  name: string;
+}
+
 /* ---------------------------------- Page ---------------------------------- */
 export default function EmploymentPage() {
   const router = useRouter();
 
   // Read phone only in the browser
   const [phone, setPhone] = useState<string | null>(null);
+
+  const [fetchState, setfetchState] = useState<FetchState[]>([]);
   useEffect(() => {
     if (!isBrowser()) return;
     setPhone(window.localStorage.getItem("nipost_phone"));
@@ -141,6 +157,26 @@ export default function EmploymentPage() {
     },
   });
 
+        useEffect(() => {
+        try {
+          
+            async function fetchTires() {
+            const res = await fetch(`/api/register/employment`);
+            const data = await res.json();
+            
+            if(data.success){
+              console.log("fetch state and type", data.data)
+              setfetchState(data.data)
+            }
+          }
+          fetchTires()            
+        } catch {
+          // ignore parse errors
+        }
+      }, []);
+
+  const [lgas, setLgas] = useState<string[]>([]);
+
   const watched = watch();
 
   // Load draft when phone is ready
@@ -174,7 +210,33 @@ export default function EmploymentPage() {
         }, 800),
       []
     );
-  
+
+    function getIdByName(data: FetchState[], targetName: string){
+        const foundItem = data.find(item => item.name === targetName);
+        const select = foundItem?.name as string
+        setValue("selectedState", select, { shouldValidate: true });
+        return foundItem?.id as number;
+      }
+    const watchedState = watch("selectedState");
+    const watchedId = watch("standardStationId");
+
+      // Keep LGA list in sync with state
+      useEffect(() => {
+        if (watchedState) {
+          setLgas(getstationByState(watchedState));
+        } else {
+          setLgas([]);
+        }
+      }, [watchedState]);
+
+      const onStateChange = (state: string) => {
+        const stateId = getIdByName(fetchState, state)
+            
+        setValue("standardStationId",stateId, { shouldValidate: true });
+        setValue("presentStation", "", { shouldValidate: true });
+        setLgas(getstationByState(state));
+      };
+
     // Auto-save on changes
     useEffect(() => {
       debouncedSave(watched, phone);
@@ -199,7 +261,29 @@ export default function EmploymentPage() {
       setValue("yearsInService", yrs, { shouldValidate: true, shouldDirty: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watched.dateFirstAppointed]); 
+  }, [watched.dateFirstAppointed]);
+
+
+        useEffect(() => {
+          try { 
+              async function fetchTires() {
+                const p = window.localStorage.getItem("nipost_phone");
+              console.log("checking phone number",p)
+              if (!p) return;
+              const res = await fetch(`/api/register/employment/all?phone=${encodeURIComponent(p)}`);
+              const data = await res.json();
+              console.log("action type", data.items,phone)
+              if(data.ok){
+                reset(data?.items);
+                toast.success("Loaded saved draft");
+              }
+              toast.error(data.message)
+            }
+            fetchTires()            
+          } catch {
+            // ignore parse errors
+          }
+        }, []);
 
 
   const onSubmit = async (data: EmploymentFormInput) => {
@@ -238,6 +322,7 @@ export default function EmploymentPage() {
     }
   };
 
+  console.log("errors list", errors)
   return (
     <>
     {/* <DashboardLayout> */}
@@ -292,13 +377,50 @@ export default function EmploymentPage() {
                     <Input {...register("rank")} />
                     {errors.rank && <p className="text-red-600 text-sm mt-1">{errors.rank.message}</p>}
                   </div>
-                  <div>
+                         <div>
+                            <Label>Grade Level </Label>
+                            <Select
+                              value={watch("gradeLevel") || "__unset__"}
+                              onValueChange={(v) => {
+                                if (v !== "__placeholder__") setValue("gradeLevel", v, { shouldValidate: true }) ;
+                              }}
+                            >
+                              <SelectTrigger className="border p-2 w-full rounded">
+                                <SelectValue placeholder="Select gradeLevel" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60 overflow-auto">
+                                <SelectItem value="__unset__" disabled>
+                                  Select Grade Level
+                                </SelectItem>
+                                <SelectItem value="GL.01"> GL.01</SelectItem>
+                                <SelectItem value="GL.02"> GL.02</SelectItem>
+                                <SelectItem value="GL.03"> GL.03</SelectItem>
+                                <SelectItem value="GL.04"> GL.04</SelectItem>
+                                <SelectItem value="GL.05"> GL.05</SelectItem>
+                                <SelectItem value="GL.06"> GL.06</SelectItem>
+                                <SelectItem value="GL.07"> GL.07</SelectItem>
+                                <SelectItem value="GL.08"> GL.08</SelectItem>
+                                <SelectItem value="GL.09"> GL.09</SelectItem>
+                                <SelectItem value="GL.10"> GL.10</SelectItem>
+                                <SelectItem value="GL.12"> GL.12</SelectItem>
+                                <SelectItem value="GL.13"> GL.13</SelectItem>
+                                <SelectItem value="GL.14"> GL.14</SelectItem>
+                                <SelectItem value="GL.15"> GL.15</SelectItem>
+                                <SelectItem value="GL.16"> GL.16</SelectItem>
+                                <SelectItem value="GL.17"> GL.17</SelectItem>              
+                              </SelectContent>
+                            </Select>
+                            {errors.gradeLevel && (
+                              <p className="text-sm text-red-600 mt-1">{errors.gradeLevel.message}</p>
+                            )}
+                          </div>
+                  {/* <div>
                     <Label>Grade Level</Label>
                     <Input {...register("gradeLevel")} />
                     {errors.gradeLevel && (
                       <p className="text-red-600 text-sm mt-1">{errors.gradeLevel.message}</p>
                     )}
-                  </div>
+                  </div> */}
                   <div>
                     <Label>Step</Label>
                     <Input {...register("step")} />
@@ -378,7 +500,42 @@ export default function EmploymentPage() {
                             </p>
                           )}
                         </div>
-                        <div>
+                          <div>
+                            <Label>Grade Level </Label>
+                            <Select
+                              value={watch(`previousPromotion.${i}.gradeLevel` as const) || "__unset__"}
+                              onValueChange={(v) => {
+                                if (v !== "__placeholder__") setValue(`previousPromotion.${i}.gradeLevel` as const, v, { shouldValidate: true }) ;
+                              }}
+                            >
+                              <SelectTrigger className="border p-2 w-full rounded">
+                                <SelectValue placeholder="Select state" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-60 overflow-auto">
+                                <SelectItem value="__unset__" disabled>
+                                  Select Grade Level
+                                </SelectItem>
+                                <SelectItem value="GL.01"> GL.01</SelectItem>
+                                <SelectItem value="GL.02"> GL.02</SelectItem>
+                                <SelectItem value="GL.03"> GL.03</SelectItem>
+                                <SelectItem value="GL.04"> GL.04</SelectItem>
+                                <SelectItem value="GL.05"> GL.05</SelectItem>
+                                <SelectItem value="GL.06"> GL.06</SelectItem>
+                                <SelectItem value="GL.07"> GL.07</SelectItem>
+                                <SelectItem value="GL.08"> GL.08</SelectItem>
+                                <SelectItem value="GL.09"> GL.09</SelectItem>
+                                <SelectItem value="GL.10"> GL.10</SelectItem>
+                                <SelectItem value="GL.12"> GL.12</SelectItem>
+                                <SelectItem value="GL.13"> GL.13</SelectItem>
+                                <SelectItem value="GL.14"> GL.14</SelectItem>
+                                <SelectItem value="GL.15"> GL.15</SelectItem>
+                                <SelectItem value="GL.16"> GL.16</SelectItem>
+                                <SelectItem value="GL.17"> GL.17</SelectItem>              
+                              </SelectContent>
+                            </Select>
+
+                          </div>
+                        {/* <div>
                           <Label>Grade Level</Label>
                           <Input {...register(`previousPromotion.${i}.gradeLevel` as const)} />
                           {errors.previousPromotion?.[i]?.gradeLevel && (
@@ -386,7 +543,7 @@ export default function EmploymentPage() {
                               {errors.previousPromotion[i]?.gradeLevel?.message}
                             </p>
                           )}
-                        </div>
+                        </div> */}
                         <div>
                           <DateField
                             label="Date of Promotion"
@@ -409,13 +566,75 @@ export default function EmploymentPage() {
               <section>
                 <h2 className="font-semibold mb-3">Present Posting</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div>
+                  {/* <div>
                     <Label>Present Station</Label>
-                    <Input {...register("presentStation")} />
-                    {errors.presentStation && (
+                    <Input {...register("presentStation")} /> */}
+                    {/* {errors.presentStation && (
                       <p className="text-red-600 text-sm mt-1">{errors.presentStation.message}</p>
-                    )}
-                  </div>
+                    )} */}
+                  {/* </div> */}
+                <div>
+                  <Label>State </Label>
+                  <Select
+                    value={watch("selectedState") || "__unset__"}
+                    onValueChange={(v) => {
+                      if (v !== "__placeholder__") onStateChange(v);
+                    }}
+                  >
+                    <SelectTrigger className="border p-2 w-full rounded">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-auto">
+                      <SelectItem value="__unset__" disabled>
+                        Select state or venture
+                      </SelectItem>
+                      {nigeriaStates.map((s) => (
+                        <SelectItem key={s.name} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.selectedState && (
+                    <p className="text-sm text-red-600 mt-1">{errors.selectedState.message}</p>
+                  )}
+                </div>
+                  
+                <div>
+                  <Label>Present Station</Label>
+                  <Select
+                    value={watch("presentStation") || "__unset__"}
+                    onValueChange={(v) => {
+                      if (v !== "__placeholder__") setValue("presentStation", v, { shouldValidate: true });
+                    }}
+                  >
+                    <SelectTrigger className="border p-2 w-full rounded">
+                      <SelectValue placeholder="Select LGA" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-auto">
+                      {lgas.length === 0 ? (
+                        <SelectItem value="__placeholder__" disabled>
+                          -- select state first --
+                        </SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="__unset__" disabled>
+                            Select LGA
+                          </SelectItem>
+                          {lgas.map((l) => (
+                            <SelectItem key={l} value={l}>
+                              {l}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.presentStation && (
+                    <p className="text-sm text-red-600 mt-1">{errors.presentStation.message}</p>
+                  )}
+                </div>
+
                   <div>
                     <Label>Years in Station</Label>
                     <Input type="number" {...register("yearsInStation", { valueAsNumber: true })} />

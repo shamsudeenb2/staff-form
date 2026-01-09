@@ -8,8 +8,11 @@ type Params = {
 export async function GET(_req: NextRequest, context: any) {
   try {
     const { params } = context as { params: { id: string } };
+    const resolvedParams  = await params
+    const paramsId = resolvedParams.id
+    console.log("lets see it bold here", paramsId)
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: paramsId },
       include: {
         personalData: true,
         educationHistory: {

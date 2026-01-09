@@ -158,7 +158,7 @@ export async function GET(req: Request) {
     
 
     const user = await prisma.user.findUnique({
-        where:{phone:phone, done:false}})
+        where:{phone:phone, done:true}})
 
         console.log("name it now",user, phone)
 
@@ -169,7 +169,7 @@ export async function GET(req: Request) {
      const items = await prisma.personalData.findUnique({
         where:{userId: user?.id}})
 
-    return NextResponse.json({ ok: true, items }, { status: 200 });
+    return NextResponse.json({ ok: true, items,email:user.email }, { status: 200 });
   } catch (err) {
     console.error("GET /api/trips error", err);
     return NextResponse.json({ ok: false, message: "Server error" }, { status: 500 });

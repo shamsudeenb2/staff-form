@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -17,18 +17,17 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { debounce } from "lodash"; // npm install lodash
 
 // shadcn/ui
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-import { Filter, RefreshCcw, Users, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
+import { Filter, RefreshCcw, Users, CheckCircle2, AlertTriangle, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 // -------------------------------------------------------------
@@ -38,31 +37,47 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 type UserRow = {
   id: string;
   name: string;
-  gender: "MALE" | "FEMALE" | "OTHER";
+  gender: string;
   rank: string;
   gradeLevel: string;
-  station: string;
-  done: boolean; // final submission status
-  createdAt: string; // ISO
+  standardStation: string; // Corrected field
+  done: boolean;
+  timeLeft: string;
+  createdAt: string;
 };
 
-// payload returned from an API (you can replace with your live endpoint)
 type DashboardPayload = {
   users: UserRow[];
-  stations: string[]; // optional convenience arrays. We also derive from users if absent
+  stations: string[];
   gradeLevels: string[];
+  pagination: {
+    total: number;
+    pages: number;
+    currentPage: number;
+  };
+  stats: {
+    total: number;
+    completed: number;
+    pending: number;
+  };
+  chartRaw: Array<{
+    gender: string;
+    station: string;
+    grade: string;
+    done: boolean;
+    createdAt: string;
+  }>;
 };
 
 // -------------------------------------------------------------
 // Helpers
 // -------------------------------------------------------------
 
-const isBrowser = () => typeof window !== "undefined";
-
 function groupCount<T, K extends string | number>(arr: T[], by: (t: T) => K) {
   const map = new Map<K, number>();
   for (const item of arr) {
     const k = by(item);
+    if (!k) continue;
     map.set(k, (map.get(k) || 0) + 1);
   }
   return Array.from(map.entries()).map(([k, v]) => ({ key: String(k), value: v }));
@@ -70,9 +85,8 @@ function groupCount<T, K extends string | number>(arr: T[], by: (t: T) => K) {
 
 function toWeekKey(iso: string) {
   const d = new Date(iso);
-  // normalize to Monday-based week key YYYY-WW
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dayNum = date.getUTCDay() || 7; // 1..7 (Mon..Sun)
+  const dayNum = date.getUTCDay() || 7;
   if (dayNum !== 1) date.setUTCDate(date.getUTCDate() - (dayNum - 1));
   const year = date.getUTCFullYear();
   const start = new Date(Date.UTC(year, 0, 1));
@@ -81,58 +95,7 @@ function toWeekKey(iso: string) {
   return `${year}-W${String(week).padStart(2, "0")}`;
 }
 
-function mkFakeData(count = 120): DashboardPayload {
-  const stations = [
-    "HQ Abuja",
-    "Lagos GPO",
-    "Kano",
-    "Port Harcourt",
-    "Ibadan",
-    "Kaduna",
-  ];
-  const gradeLevels = ["GL07", "GL08", "GL09", "GL10", "GL12", "GL14"];
-  const ranks = ["Officer", "Senior Officer", "Principal Officer", "Assistant Manager", "Manager"];
-
-  const users: UserRow[] = Array.from({ length: count }).map((_, i) => {
-    const station = stations[Math.floor(Math.random() * stations.length)];
-    const gradeLevel = gradeLevels[Math.floor(Math.random() * gradeLevels.length)];
-    const rank = ranks[Math.floor(Math.random() * ranks.length)];
-    const gender = Math.random() > 0.47 ? "MALE" : "FEMALE";
-    const done = Math.random() > 0.58 ? false : true;
-    const createdAt = new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 120).toISOString();
-    return {
-      id: `u_${i + 1}`,
-      name: `User ${i + 1}`,
-      gender,
-      rank,
-      gradeLevel,
-      station,
-      done,
-      createdAt,
-    };
-  });
-
-  return { users, stations, gradeLevels };
-}
-
-async function fetchDashboard(): Promise<DashboardPayload> {
-  try {
-    const res = await fetch("/api/admin/dashboard");
-    if (!res.ok) throw new Error("Network error");
-    const data = (await res.json()) as DashboardPayload;
-    // fallback derivations if the API omits station/grade arrays
-    const stations = data.stations?.length
-      ? data.stations
-      : Array.from(new Set(data.users.map((u) => u.station))).sort();
-    const gradeLevels = data.gradeLevels?.length
-      ? data.gradeLevels
-      : Array.from(new Set(data.users.map((u) => u.gradeLevel))).sort();
-    return { ...data, stations, gradeLevels };
-  } catch {
-    // local mock to keep the page functional without a backend
-    return mkFakeData();
-  }
-}
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"];
 
 // -------------------------------------------------------------
 // Page Component
@@ -141,106 +104,117 @@ async function fetchDashboard(): Promise<DashboardPayload> {
 export default function AdminDashboard() {
   const [payload, setPayload] = useState<DashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Filters
   const [station, setStation] = useState<string>("ALL");
   const [grade, setGrade] = useState<string>("ALL");
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [page, setPage] = useState(1);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedQ(q), 500);
+    return () => clearTimeout(handler);
+  }, [q]);
+
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        station,
+        grade,
+        q: debouncedQ,
+        page: page.toString(),
+        limit: "20",
+      });
+      const res = await fetch(`/api/admin/dashboard?${params.toString()}`);
+      if (!res.ok) throw new Error("Network error");
+      const data = await res.json();
+      setPayload(data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [station, grade, debouncedQ, page]);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const data = await fetchDashboard();
-      if (!mounted) return;
-      setPayload(data);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    fetchDashboard();
+  }, [fetchDashboard]);
 
-  // options for slicers
-  const stations = useMemo(() => payload?.stations ?? [], [payload]);
-  const gradeLevels = useMemo(() => payload?.gradeLevels ?? [], [payload]);
+  // Reset page when filters change
+  const handleFilterChange = (type: 'station' | 'grade', value: string) => {
+    if (type === 'station') setStation(value);
+    if (type === 'grade') setGrade(value);
+    setPage(1); 
+  };
 
-  const filteredUsers = useMemo(() => {
-    if (!payload) return [] as UserRow[];
-    return payload.users
-      .filter((u) => (station === "ALL" ? true : u.station === station))
-      .filter((u) => (grade === "ALL" ? true : u.gradeLevel === grade))
-      .filter((u) => (q.trim() ? u.name.toLowerCase().includes(q.trim().toLowerCase()) : true));
-  }, [payload, station, grade, q]);
-
-  const complete = filteredUsers.filter((u) => u.done).length;
-  const incomplete = filteredUsers.length - complete;
-
-  // bar: distribution of users *by station* for the selected grade level
+  // -------------------------------------------------------------
+  // Chart Data Derivations (using payload.chartRaw for accuracy)
+  // -------------------------------------------------------------
+  
   const barData = useMemo(() => {
-    const base = payload?.users.filter((u) => (grade === "ALL" ? true : u.gradeLevel === grade)) || [];
-    const grouped = groupCount(base, (u) => u.station);
-    return grouped.map((x) => ({ station: x.key, users: x.value }));
-  }, [payload, grade]);
+    if (!payload?.chartRaw) return [];
+    // If a specific grade is selected, the API already filtered chartRaw to that grade.
+    // Group all matching records by station.
+    return groupCount(payload.chartRaw, (u) => u.station)
+      .map((x) => ({ station: x.key, users: x.value }));
+  }, [payload]);
 
-  // pie: male vs female for current filters (station + grade)
   const pieData = useMemo(() => {
-    const base = filteredUsers;
-    const male = base.filter((u) => u.gender === "MALE").length;
-    const female = base.filter((u) => u.gender === "FEMALE").length;
-    const other = base.filter((u) => u.gender !== "MALE" && u.gender !== "FEMALE").length;
-    return [
-      { name: "Male", value: male },
-      { name: "Female", value: female },
-      ...(other ? [{ name: "Other", value: other }] : []),
-    ];
-  }, [filteredUsers]);
+    if (!payload?.chartRaw) return [];
+    return groupCount(payload.chartRaw, (u) => u.gender)
+      .map((x) => ({ name: x.key, value: x.value }));
+  }, [payload]);
 
-  // trend: submissions (done=true) over time, filtered
+  // const lineData = useMemo(() => {
+  //   if (!payload?.chartRaw) return [];
+  //   const base = payload.chartRaw.filter((u) => u.done);
+  //   return groupCount(base, (u) => toWeekKey(u.createdAt))
+  //     .map((g) => ({ week: g.key, submissions: g.value }))
+  //     .sort((a, b) => (a.week < b.week ? -1 : 1));
+  // }, [payload]);
   const lineData = useMemo(() => {
-    const base = filteredUsers.filter((u) => u.done);
-    const grouped = groupCount(base, (u) => toWeekKey(u.createdAt));
-    return grouped
-      .map((g) => ({ week: g.key, submissions: g.value }))
-      .sort((a, b) => (a.week < b.week ? -1 : 1));
-  }, [filteredUsers]);
-
-  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"]; // Tailwind palette hues
+  if (!payload?.chartRaw) return [];
+  const base = payload.chartRaw.filter((u) => u.done);
+  const grouped = groupCount(base, (u) => toWeekKey(u.createdAt))
+    .map((g) => ({ week: g.key, submissions: g.value }));
+  
+  // FIX: Spread into a new array before sorting
+  return [...grouped].sort((a, b) => (a.week < b.week ? -1 : 1));
+}, [payload]);
 
   return (
     <DashboardLayout>
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-      <div className="px-4 md:px-8 py-6 max-w-[1400px] mx-auto">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setStation("ALL"); setGrade("ALL"); setQ(""); }}>
-              <RefreshCcw className="w-4 h-4 mr-2" /> Reset
-            </Button>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <div className="px-4 md:px-8 py-6 max-w-[1400px] mx-auto">
+          
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setStation("ALL"); setGrade("ALL"); setQ(""); setPage(1); }}>
+                <RefreshCcw className="w-4 h-4 mr-2" /> Reset
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Top Row: Slicers */}
-        <Card className="mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Skeleton className="h-10" />
-                <Skeleton className="h-10" />
-                <Skeleton className="h-10" />
-                <Skeleton className="h-10" />
-              </div>
-            ) : (
+          {/* Filters */}
+          <Card className="mb-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-sm font-medium">Station</label>
-                  <Select value={station} onValueChange={setStation}>
+                  <Select value={station} onValueChange={(v) => handleFilterChange('station', v)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select station" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Stations</SelectItem>
-                      {stations.map((s) => (
+                      {payload?.stations.map((s) => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
@@ -248,13 +222,13 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Grade Level</label>
-                  <Select value={grade} onValueChange={setGrade}>
+                  <Select value={grade} onValueChange={(v) => handleFilterChange('grade', v)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select grade" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Grades</SelectItem>
-                      {gradeLevels.map((g) => (
+                      {payload?.gradeLevels.map((g) => (
                         <SelectItem key={g} value={g}>{g}</SelectItem>
                       ))}
                     </SelectContent>
@@ -262,64 +236,68 @@ export default function AdminDashboard() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium">Search by name</label>
-                  <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a name…" className="mt-1" />
+                  <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Type a name…" className="mt-1" />
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Second Row: KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Users (filtered)</CardTitle></CardHeader>
-            <CardContent className="flex items-center gap-3">
-              <Users className="w-10 h-10" />
-              <div>
-                <div className="text-3xl font-bold">{loading ? "—" : filteredUsers.length}</div>
-                <div className="text-xs text-muted-foreground">Based on current filters</div>
-              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Completed Submissions</CardTitle></CardHeader>
-            <CardContent className="flex items-center gap-3">
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
-              <div>
-                <div className="text-3xl font-bold">{loading ? "—" : complete}</div>
-                <div className="text-xs text-muted-foreground">Users with done = true</div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Users (filtered)</CardTitle></CardHeader>
+              <CardContent className="flex items-center gap-3">
+                <Users className="w-10 h-10" />
+                <div>
+                  <div className="text-3xl font-bold">{loading ? "—" : payload?.stats.total}</div>
+                  <div className="text-xs text-muted-foreground">Based on current filters</div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Pending / Incomplete</CardTitle></CardHeader>
-            <CardContent className="flex items-center gap-3">
-              <AlertTriangle className="w-10 h-10 text-amber-500" />
-              <div>
-                <div className="text-3xl font-bold">{loading ? "—" : incomplete}</div>
-                <div className="text-xs text-muted-foreground">Users yet to submit</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Completed Submissions</CardTitle></CardHeader>
+              <CardContent className="flex items-center gap-3">
+                <CheckCircle2 className="w-10 h-10 text-green-600" />
+                <div>
+                  <div className="text-3xl font-bold">{loading ? "—" : payload?.stats.completed}</div>
+                  <div className="text-xs text-muted-foreground">Users with done = true</div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Third Row: Table + Bar chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Pending / Incomplete</CardTitle></CardHeader>
+              <CardContent className="flex items-center gap-3">
+                <AlertTriangle className="w-10 h-10 text-amber-500" />
+                <div>
+                  <div className="text-3xl font-bold">{loading ? "—" : payload?.stats.pending}</div>
+                  <div className="text-xs text-muted-foreground">Users yet to submit</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* User Table */}
+          <Card className="mb-6">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle>Users</CardTitle>
+              {payload && (
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 1 || loading}>
+                      <ChevronLeft className="w-4 h-4" />
+                   </Button>
+                   <span className="text-xs font-medium">Page {page} of {payload.pagination.pages}</span>
+                   <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= payload.pagination.pages || loading}>
+                      <ChevronRight className="w-4 h-4" />
+                   </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-8" />
-                  <Skeleton className="h-8" />
-                  <Skeleton className="h-8" />
-                  <Skeleton className="h-8" />
-                </div>
-              ) : filteredUsers.length === 0 ? (
+              {loading && !payload ? (
+                <div className="space-y-2"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div>
+              ) : payload?.users.length === 0 ? (
                 <div className="text-sm text-muted-foreground">No users match current filters.</div>
               ) : (
                 <div className="rounded-lg border overflow-hidden">
@@ -331,27 +309,31 @@ export default function AdminDashboard() {
                           <th className="text-left p-3">Rank</th>
                           <th className="text-left p-3">Grade</th>
                           <th className="text-left p-3">Station</th>
+                          <th className="text-left p-3">Years Left in Service</th>
                           <th className="text-left p-3">Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredUsers.map((u) => (
+                        {payload?.users.map((u) => (
                           <tr key={u.id} className="border-t">
                             <td className="p-3">
-                              <Link href={`/admin/users/${u.id}`} className="text-primary hover:underline">
-                                {u.name}
-                              </Link>
+                              <Link href={`/admin/users/${u.id}`} className="text-primary hover:underline font-medium">{u.name}</Link>
                             </td>
                             <td className="p-3">{u.rank}</td>
                             <td className="p-3">{u.gradeLevel}</td>
-                            <td className="p-3">{u.station}</td>
-                            <td className="p-3">
+                            <td className="p-3">{u.standardStation}</td>
+                            <td className="p-3">{u.timeLeft}</td>
+                             <td className="p-3">
                               {u.done ? (
                                 <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Complete</span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Pending</span>
-                              )}
-                            </td>
+                               ) : (
+                                 <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Pending</span>
+                              )}                          </td>
+                            {/* <td className="p-3">
+                              <Badge variant={u.done ? "success" : "warning"} className={u.done ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}>
+                                {u.done ? "Complete" : "Pending"}
+                              </Badge>
+                            </td> */}
                           </tr>
                         ))}
                       </tbody>
@@ -362,124 +344,627 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Users per Station (by selected Grade)</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[420px]">
-              {loading ? (
-                <Skeleton className="h-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                    <XAxis dataKey="station" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="users" name="Users" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Fourth Row: Pie (Gender) + Trend Line */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle>Gender Distribution</CardTitle></CardHeader>
-            <CardContent className="h-[320px]">
-              {loading ? (
-                <Skeleton className="h-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                      {pieData.map((entry, idx) => (
-                        <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2 flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5" /> Submissions Over Time</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[320px]">
-              {loading ? (
-                <Skeleton className="h-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineData} margin={{ top: 8, right: 20, left: 0, bottom: 8 }}>
-                    <XAxis dataKey="week" tick={{ fontSize: 12 }} interval={Math.ceil(lineData.length / 8)} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="submissions" name="Final submissions" stroke="#10b981" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bonus: Tiny insights */}
-        {!loading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Top Stations by Users</CardTitle></CardHeader>
-              <CardContent>
-                <ul className="text-sm space-y-2">
-                  {groupCount(filteredUsers, (u) => u.station)
-                    .sort((a, b) => b.value - a.value)
-                    .slice(0, 5)
-                    .map((x) => (
-                      <li key={x.key} className="flex items-center justify-between">
-                        <span>{x.key}</span>
-                        <Badge variant="secondary">{x.value}</Badge>
-                      </li>
-                    ))}
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Top Grades by Users</CardTitle></CardHeader>
-              <CardContent>
-                <ul className="text-sm space-y-2">
-                  {groupCount(filteredUsers, (u) => u.gradeLevel)
-                    .sort((a, b) => b.value - a.value)
-                    .slice(0, 5)
-                    .map((x) => (
-                      <li key={x.key} className="flex items-center justify-between">
-                        <span>{x.key}</span>
-                        <Badge variant="secondary">{x.value}</Badge>
-                      </li>
-                    ))}
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Completion Rate</CardTitle></CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {filteredUsers.length ? Math.round((complete / filteredUsers.length) * 100) : 0}%
-                </div>
-                <div className="text-xs text-muted-foreground">of filtered users have completed submission</div>
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <Card className="lg:col-span-3">
+              <CardHeader className="pb-2"><CardTitle>Users per Station (Filtered)</CardTitle></CardHeader>
+              <CardContent className="h-[420px]">
+                {loading ? <Skeleton className="h-full w-full" /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData}>
+                      <XAxis dataKey="station" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={70} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="users" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>
-        )}
-      </div>
-    </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle>Gender Distribution</CardTitle></CardHeader>
+              <CardContent className="h-[320px]">
+                {loading ? <Skeleton className="h-full w-full" /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={80} paddingAngle={5}>
+                        {pieData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5" /> Submissions Over Time</CardTitle></CardHeader>
+              <CardContent className="h-[320px]">
+                {loading ? <Skeleton className="h-full w-full" /> : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineData}>
+                      <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="submissions" stroke="#10b981" strokeWidth={3} dot={true} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bottom Insights */}
+          {!loading && payload && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Top Stations</CardTitle></CardHeader>
+                <CardContent>
+                  <ul className="text-sm space-y-2">
+                    {/* FIX: Spread barData before sorting */}
+                    {[...barData]
+                      .sort((a, b) => b.users - a.users)
+                      .slice(0, 5)
+                      .map((x) => (
+                        <li key={x.station} className="flex justify-between">
+                          <span>{x.station}</span>
+                          <Badge variant="secondary">{x.users}</Badge>
+                        </li>
+                      ))}
+                  </ul>
+                </CardContent>
+              </Card>
+              {/* <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Top Stations</CardTitle></CardHeader>
+                <CardContent>
+                  <ul className="text-sm space-y-2">
+                    {barData.sort((a,b) => b.users - a.users).slice(0, 5).map(x => (
+                      <li key={x.station} className="flex justify-between"><span>{x.station}</span><Badge variant="secondary">{x.users}</Badge></li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card> */}
+              {/* <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Top Grades</CardTitle></CardHeader>
+                <CardContent>
+                  <ul className="text-sm space-y-2">
+                    {groupCount(payload.chartRaw, u => u.grade).sort((a,b) => b.value - a.value).slice(0, 5).map(x => (
+                      <li key={x.key} className="flex justify-between"><span>{x.key}</span><Badge variant="secondary">{x.value}</Badge></li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card> */}
+              <Card>
+  <CardHeader className="pb-2"><CardTitle className="text-sm">Top Grades</CardTitle></CardHeader>
+  <CardContent>
+    <ul className="text-sm space-y-2">
+      {/* FIX: Spread the groupCount result before sorting */}
+      {[...groupCount(payload.chartRaw, (u) => u.grade)]
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5)
+        .map((x) => (
+          <li key={x.key} className="flex justify-between">
+            <span>{x.key}</span>
+            <Badge variant="secondary">{x.value}</Badge>
+          </li>
+        ))}
+    </ul>
+  </CardContent>
+</Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Completion Rate</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{payload.stats.total ? Math.round((payload.stats.completed / payload.stats.total) * 100) : 0}%</div>
+                  <div className="text-xs text-muted-foreground">of currently filtered users</div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+        </div>
+      </motion.div>
     </DashboardLayout>
   );
 }
+
+
+// "use client";
+
+// import { useEffect, useMemo, useState } from "react";
+// import Link from "next/link";
+// import { motion } from "framer-motion";
+// import {
+//   ResponsiveContainer,
+//   BarChart,
+//   Bar,
+//   XAxis,
+//   YAxis,
+//   Tooltip,
+//   Legend,
+//   PieChart,
+//   Pie,
+//   Cell,
+//   LineChart,
+//   Line,
+// } from "recharts";
+
+// // shadcn/ui
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+// import { Input } from "@/components/ui/input";
+// import { Button } from "@/components/ui/button";
+// import { Separator } from "@/components/ui/separator";
+// import { ScrollArea } from "@/components/ui/scroll-area";
+// import { Skeleton } from "@/components/ui/skeleton";
+// import { Badge } from "@/components/ui/badge";
+
+// import { Filter, RefreshCcw, Users, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
+// import DashboardLayout from "@/components/layout/DashboardLayout";
+
+// // -------------------------------------------------------------
+// // Types
+// // -------------------------------------------------------------
+
+// type UserRow = {
+//   id: string;
+//   name: string;
+//   gender: "MALE" | "FEMALE" | "OTHER";
+//   rank: string;
+//   gradeLevel: string;
+//   station: string;
+//   done: boolean; // final submission status
+//   timeLeft: string;
+//   createdAt: string; // ISO
+// };
+
+// // payload returned from an API (you can replace with your live endpoint)
+// type DashboardPayload = {
+//   users: UserRow[];
+//   stations: string[]; // optional convenience arrays. We also derive from users if absent
+//   gradeLevels: string[];
+// };
+
+// // -------------------------------------------------------------
+// // Helpers
+// // -------------------------------------------------------------
+
+// const isBrowser = () => typeof window !== "undefined";
+
+// function groupCount<T, K extends string | number>(arr: T[], by: (t: T) => K) {
+//   const map = new Map<K, number>();
+//   for (const item of arr) {
+//     const k = by(item);
+//     map.set(k, (map.get(k) || 0) + 1);
+//   }
+//   return Array.from(map.entries()).map(([k, v]) => ({ key: String(k), value: v }));
+// }
+
+// function toWeekKey(iso: string) {
+//   const d = new Date(iso);
+//   // normalize to Monday-based week key YYYY-WW
+//   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+//   const dayNum = date.getUTCDay() || 7; // 1..7 (Mon..Sun)
+//   if (dayNum !== 1) date.setUTCDate(date.getUTCDate() - (dayNum - 1));
+//   const year = date.getUTCFullYear();
+//   const start = new Date(Date.UTC(year, 0, 1));
+//   const diff = (date.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+//   const week = Math.ceil((diff + start.getUTCDay() + 1) / 7);
+//   return `${year}-W${String(week).padStart(2, "0")}`;
+// }
+
+// function mkFakeData(count = 120): DashboardPayload {
+//   const stations = [
+//     "HQ Abuja",
+//     "Lagos GPO",
+//     "Kano",
+//     "Port Harcourt",
+//     "Ibadan",
+//     "Kaduna",
+//   ];
+//   const gradeLevels = ["GL07", "GL08", "GL09", "GL10", "GL12", "GL14"];
+//   const ranks = ["Officer", "Senior Officer", "Principal Officer", "Assistant Manager", "Manager"];
+
+//   const users: UserRow[] = Array.from({ length: count }).map((_, i) => {
+//     const station = stations[Math.floor(Math.random() * stations.length)];
+//     const gradeLevel = gradeLevels[Math.floor(Math.random() * gradeLevels.length)];
+//     const rank = ranks[Math.floor(Math.random() * ranks.length)];
+//     const gender = Math.random() > 0.47 ? "MALE" : "FEMALE";
+//     const done = Math.random() > 0.58 ? false : true;
+//     const timeLeft = "5"
+//     const createdAt = new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 120).toISOString();
+//     return {
+//       id: `u_${i + 1}`,
+//       name: `User ${i + 1}`,
+//       gender,
+//       rank,
+//       gradeLevel,
+//       station,
+//       done,
+//       timeLeft,
+//       createdAt,
+//     };
+//   });
+
+//   return { users, stations, gradeLevels };
+// }
+
+// async function fetchDashboard(): Promise<DashboardPayload> {
+//   try {
+//     const res = await fetch("/api/admin/dashboard");
+//     if (!res.ok) throw new Error("Network error");
+//     const data = (await res.json()) as DashboardPayload;
+//     // fallback derivations if the API omits station/grade arrays
+//     console.log("stations", data.stations)
+//     const stations = data.stations?.length
+//       ? data.stations
+//       : Array.from(new Set(data.users.map((u) => u.station))).sort();
+//     const gradeLevels = data.gradeLevels?.length
+//       ? data.gradeLevels
+//       : Array.from(new Set(data.users.map((u) => u.gradeLevel))).sort();
+//     return { ...data, stations, gradeLevels };
+//   } catch {
+//     // local mock to keep the page functional without a backend
+//     return mkFakeData();
+//   }
+// }
+
+// // -------------------------------------------------------------
+// // Page Component
+// // -------------------------------------------------------------
+
+// export default function AdminDashboard() {
+//   const [payload, setPayload] = useState<DashboardPayload | null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const [station, setStation] = useState<string>("ALL");
+//   const [grade, setGrade] = useState<string>("ALL");
+//   const [q, setQ] = useState("");
+
+//   useEffect(() => {
+//     let mounted = true;
+//     (async () => {
+//       const data = await fetchDashboard();
+//       if (!mounted) return;
+//       setPayload(data);
+//       setLoading(false);
+//     })();
+//     return () => {
+//       mounted = false;
+//     };
+//   }, []);
+
+//   // options for slicers
+//   const stations = useMemo(() => payload?.stations ?? [], [payload]);
+//   const gradeLevels = useMemo(() => payload?.gradeLevels ?? [], [payload]);
+
+//   const filteredUsers = useMemo(() => {
+//     if (!payload) return [] as UserRow[];
+//     return payload.users
+//       .filter((u) => (station === "ALL" ? true : u.station === station))
+//       .filter((u) => (grade === "ALL" ? true : u.gradeLevel === grade))
+//       .filter((u) => (q.trim() ? u.name.toLowerCase().includes(q.trim().toLowerCase()) : true));
+//   }, [payload, station, grade, q]);
+
+//   const complete = filteredUsers.filter((u) => u.done).length;
+//   const incomplete = filteredUsers.length - complete;
+
+//   // bar: distribution of users *by station* for the selected grade level
+//   const barData = useMemo(() => {
+//     const base = payload?.users.filter((u) => (grade === "ALL" ? true : u.gradeLevel === grade)) || [];
+//     const grouped = groupCount(base, (u) => u.station);
+//     return grouped.map((x) => ({ station: x.key, users: x.value }));
+//   }, [payload, grade]);
+
+//   // pie: male vs female for current filters (station + grade)
+//   const pieData = useMemo(() => {
+//     const base = filteredUsers;
+//     const male = base.filter((u) => u.gender === "MALE").length;
+//     const female = base.filter((u) => u.gender === "FEMALE").length;
+//     const other = base.filter((u) => u.gender !== "MALE" && u.gender !== "FEMALE").length;
+//     return [
+//       { name: "Male", value: male },
+//       { name: "Female", value: female },
+//       ...(other ? [{ name: "Other", value: other }] : []),
+//     ];
+//   }, [filteredUsers]);
+
+//   // trend: submissions (done=true) over time, filtered
+//   const lineData = useMemo(() => {
+//     const base = filteredUsers.filter((u) => u.done);
+//     const grouped = groupCount(base, (u) => toWeekKey(u.createdAt));
+//     return grouped
+//       .map((g) => ({ week: g.key, submissions: g.value }))
+//       .sort((a, b) => (a.week < b.week ? -1 : 1));
+//   }, [filteredUsers]);
+
+//   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"]; // Tailwind palette hues
+
+//   return (
+//     <DashboardLayout>
+//     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+//       <div className="px-4 md:px-8 py-6 max-w-[1400px] mx-auto">
+//         <div className="mb-4 flex items-center justify-between">
+//           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+//           <div className="flex gap-2">
+//             <Button variant="outline" size="sm" onClick={() => { setStation("ALL"); setGrade("ALL"); setQ(""); }}>
+//               <RefreshCcw className="w-4 h-4 mr-2" /> Reset
+//             </Button>
+//           </div>
+//         </div>
+
+//         {/* Top Row: Slicers */}
+//         <Card className="mb-6">
+//           <CardHeader className="pb-2">
+//             <CardTitle className="flex items-center gap-2"><Filter className="w-5 h-5" /> Filters</CardTitle>
+//           </CardHeader>
+//           <CardContent>
+//             {loading ? (
+//               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+//                 <Skeleton className="h-10" />
+//                 <Skeleton className="h-10" />
+//                 <Skeleton className="h-10" />
+//                 <Skeleton className="h-10" />
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+//                 <div>
+//                   <label className="text-sm font-medium">Station</label>
+//                   <Select value={station} onValueChange={setStation}>
+//                     <SelectTrigger className="mt-1">
+//                       <SelectValue placeholder="Select station" />
+//                     </SelectTrigger>
+//                     <SelectContent>
+//                       <SelectItem value="ALL">All Stations</SelectItem>
+//                       {stations.map((s) => (
+//                         <SelectItem key={s} value={s}>{s}</SelectItem>
+//                       ))}
+//                     </SelectContent>
+//                   </Select>
+//                 </div>
+//                 <div>
+//                   <label className="text-sm font-medium">Grade Level</label>
+//                   <Select value={grade} onValueChange={setGrade}>
+//                     <SelectTrigger className="mt-1">
+//                       <SelectValue placeholder="Select grade" />
+//                     </SelectTrigger>
+//                     <SelectContent>
+//                       <SelectItem value="ALL">All Grades</SelectItem>
+//                       {gradeLevels.map((g) => (
+//                         <SelectItem key={g} value={g}>{g}</SelectItem>
+//                       ))}
+//                     </SelectContent>
+//                   </Select>
+//                 </div>
+//                 <div className="md:col-span-2">
+//                   <label className="text-sm font-medium">Search by name</label>
+//                   <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a name…" className="mt-1" />
+//                 </div>
+//               </div>
+//             )}
+//           </CardContent>
+//         </Card>
+
+//         {/* Second Row: KPI Cards */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+//           <Card>
+//             <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Users (filtered)</CardTitle></CardHeader>
+//             <CardContent className="flex items-center gap-3">
+//               <Users className="w-10 h-10" />
+//               <div>
+//                 <div className="text-3xl font-bold">{loading ? "—" : filteredUsers.length}</div>
+//                 <div className="text-xs text-muted-foreground">Based on current filters</div>
+//               </div>
+//             </CardContent>
+//           </Card>
+
+//           <Card>
+//             <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Completed Submissions</CardTitle></CardHeader>
+//             <CardContent className="flex items-center gap-3">
+//               <CheckCircle2 className="w-10 h-10 text-green-600" />
+//               <div>
+//                 <div className="text-3xl font-bold">{loading ? "—" : complete}</div>
+//                 <div className="text-xs text-muted-foreground">Users with done = true</div>
+//               </div>
+//             </CardContent>
+//           </Card>
+
+//           <Card>
+//             <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Pending / Incomplete</CardTitle></CardHeader>
+//             <CardContent className="flex items-center gap-3">
+//               <AlertTriangle className="w-10 h-10 text-amber-500" />
+//               <div>
+//                 <div className="text-3xl font-bold">{loading ? "—" : incomplete}</div>
+//                 <div className="text-xs text-muted-foreground">Users yet to submit</div>
+//               </div>
+//             </CardContent>
+//           </Card>
+//         </div>
+
+//         {/* Third Row: Table */}
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+//           <Card className="lg:col-span-3">
+//             <CardHeader className="pb-2">
+//               <CardTitle>Users</CardTitle>
+//             </CardHeader>
+//             <CardContent>
+//               {loading ? (
+//                 <div className="space-y-2">
+//                   <Skeleton className="h-8" />
+//                   <Skeleton className="h-8" />
+//                   <Skeleton className="h-8" />
+//                   <Skeleton className="h-8" />
+//                 </div>
+//               ) : filteredUsers.length === 0 ? (
+//                 <div className="text-sm text-muted-foreground">No users match current filters.</div>
+//               ) : (
+//                 <div className="rounded-lg border overflow-hidden">
+//                   <div className="max-h-[420px] overflow-auto">
+//                     <table className="w-full text-sm">
+//                       <thead className="bg-muted/50 sticky top-0">
+//                         <tr>
+//                           <th className="text-left p-3">Name</th>
+//                           <th className="text-left p-3">Rank</th>
+//                           <th className="text-left p-3">Grade</th>
+//                           <th className="text-left p-3">Station</th>
+//                           <th className="text-left p-3">Yers Left in Service</th>
+//                           <th className="text-left p-3">Status</th>
+//                         </tr>
+//                       </thead>
+//                       <tbody>
+//                         {filteredUsers.map((u) => (
+//                           <tr key={u.id} className="border-t">
+//                             <td className="p-3">
+//                               <Link href={`/admin/users/${u.id}`} className="text-primary hover:underline">
+//                                 {u.name}
+//                               </Link>
+//                             </td>
+//                             <td className="p-3">{u.rank}</td>
+//                             <td className="p-3">{u.gradeLevel}</td>
+//                             <td className="p-3">{u.station}</td>
+//                             <td className="p-3">{u.timeLeft}</td>
+//                             <td className="p-3">
+//                               {u.done ? (
+//                                 <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Complete</span>
+//                               ) : (
+//                                 <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">Pending</span>
+//                               )}
+//                             </td>
+//                           </tr>
+//                         ))}
+//                       </tbody>
+//                     </table>
+//                   </div>
+//                 </div>
+//               )}
+//             </CardContent>
+//           </Card>
+
+
+//         </div>
+
+//         {/* Third Row: Bar chart */}
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+//           <Card className="lg:col-span-3">
+//             <CardHeader className="pb-2">
+//               <CardTitle>Users per Station (by selected Grade)</CardTitle>
+//             </CardHeader>
+//             <CardContent className="h-[420px]">
+//               {loading ? (
+//                 <Skeleton className="h-full" />
+//               ) : (
+//                 <ResponsiveContainer width="100%" height="100%">
+//                   <BarChart data={barData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+//                     <XAxis dataKey="station" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={50} />
+//                     <YAxis allowDecimals={false} />
+//                     <Tooltip />
+//                     <Legend />
+//                     <Bar dataKey="users" name="Users" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+//                   </BarChart>
+//                 </ResponsiveContainer>
+//               )}
+//             </CardContent>
+//           </Card>
+//         </div>
+
+//         {/* Fourth Row: Pie (Gender) + Trend Line */}
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+//           <Card>
+//             <CardHeader className="pb-2"><CardTitle>Gender Distribution</CardTitle></CardHeader>
+//             <CardContent className="h-[320px]">
+//               {loading ? (
+//                 <Skeleton className="h-full" />
+//               ) : (
+//                 <ResponsiveContainer width="100%" height="100%">
+//                   <PieChart>
+//                     <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+//                       {pieData.map((entry, idx) => (
+//                         <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+//                       ))}
+//                     </Pie>
+//                     <Tooltip />
+//                     <Legend />
+//                   </PieChart>
+//                 </ResponsiveContainer>
+//               )}
+//             </CardContent>
+//           </Card>
+
+//           <Card className="lg:col-span-2">
+//             <CardHeader className="pb-2 flex items-center justify-between">
+//               <CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5" /> Submissions Over Time</CardTitle>
+//             </CardHeader>
+//             <CardContent className="h-[320px]">
+//               {loading ? (
+//                 <Skeleton className="h-full" />
+//               ) : (
+//                 <ResponsiveContainer width="100%" height="100%">
+//                   <LineChart data={lineData} margin={{ top: 8, right: 20, left: 0, bottom: 8 }}>
+//                     <XAxis dataKey="week" tick={{ fontSize: 12 }} interval={Math.ceil(lineData.length / 8)} />
+//                     <YAxis allowDecimals={false} />
+//                     <Tooltip />
+//                     <Legend />
+//                     <Line type="monotone" dataKey="submissions" name="Final submissions" stroke="#10b981" strokeWidth={2} dot={false} />
+//                   </LineChart>
+//                 </ResponsiveContainer>
+//               )}
+//             </CardContent>
+//           </Card>
+//         </div>
+
+//         {/* Bonus: Tiny insights */}
+//         {!loading && (
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//             <Card>
+//               <CardHeader className="pb-2"><CardTitle className="text-sm">Top Stations by Users</CardTitle></CardHeader>
+//               <CardContent>
+//                 <ul className="text-sm space-y-2">
+//                   {groupCount(filteredUsers, (u) => u.station)
+//                     .sort((a, b) => b.value - a.value)
+//                     .slice(0, 5)
+//                     .map((x) => (
+//                       <li key={x.key} className="flex items-center justify-between">
+//                         <span>{x.key}</span>
+//                         <Badge variant="secondary">{x.value}</Badge>
+//                       </li>
+//                     ))}
+//                 </ul>
+//               </CardContent>
+//             </Card>
+//             <Card>
+//               <CardHeader className="pb-2"><CardTitle className="text-sm">Top Grades by Users</CardTitle></CardHeader>
+//               <CardContent>
+//                 <ul className="text-sm space-y-2">
+//                   {groupCount(filteredUsers, (u) => u.gradeLevel)
+//                     .sort((a, b) => b.value - a.value)
+//                     .slice(0, 5)
+//                     .map((x) => (
+//                       <li key={x.key} className="flex items-center justify-between">
+//                         <span>{x.key}</span>
+//                         <Badge variant="secondary">{x.value}</Badge>
+//                       </li>
+//                     ))}
+//                 </ul>
+//               </CardContent>
+//             </Card>
+//             <Card>
+//               <CardHeader className="pb-2"><CardTitle className="text-sm">Completion Rate</CardTitle></CardHeader>
+//               <CardContent>
+//                 <div className="text-3xl font-bold">
+//                   {filteredUsers.length ? Math.round((complete / filteredUsers.length) * 100) : 0}%
+//                 </div>
+//                 <div className="text-xs text-muted-foreground">of filtered users have completed submission</div>
+//               </CardContent>
+//             </Card>
+//           </div>
+//         )}
+//       </div>
+//     </motion.div>
+//     </DashboardLayout>
+//   );
+// }
 
 
 // "use client";

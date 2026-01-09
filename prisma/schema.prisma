@@ -129,7 +129,9 @@ model EmploymentData {
   department             String
   yearsInStation         Int
   yearsInService         Int
-
+  
+  standardStationId  Int?     
+  standardStation    StandardStation? @relation(fields: [standardStationId], references: [id])
   user                   User                @relation(fields: [userId], references: [id])
 }
 
@@ -208,4 +210,12 @@ model SubmissionWindow {
 
   @@unique([yearMonth])
   @@index([isOpen])
+}
+
+
+model StandardStation {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // e.g., "Lagos State Office", "Venture A"
+  type      String   // "OFFICE" or "VENTURE"
+  employment     EmploymentData[]  // Relation to Staff
 }
