@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/components/lib/db"; // adjust path if your prisma client is exported elsewhere
 import { Prisma } from "@prisma/client";
 
+
 /**
  * Expected request body:
  * {
@@ -158,7 +159,7 @@ export async function GET(req: Request) {
     
 
     const user = await prisma.user.findUnique({
-        where:{phone:phone, done:true}})
+        where:{phone:phone, done:false}})
 
         console.log("name it now",user, phone)
 

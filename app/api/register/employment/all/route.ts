@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     const phone = url.searchParams.get("phone") ?? "";
 
     const user = await prisma.user.findUnique({
-        where:{phone:phone, done:true}})
+        where:{phone:phone, done:false}})
 
         console.log("name it now",user, phone)
 
