@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Link from "next/link";
 
 type Json = any;
 
@@ -219,7 +220,10 @@ export default function AdminUserDetailsPage() {
                     {/* Bio Data */}
                     <Card className="min-h-[60vh]">
                       <CardHeader>
-                        <CardTitle>Bio Data</CardTitle>
+                        <div className="flex justify-between">
+                          <CardTitle>Bio Data</CardTitle>
+                        <CardTitle><Link href={`/admin/users/updates/${params.id}`}>Update Staff Transfer</Link></CardTitle>
+                        </div>
                       </CardHeader>
                       <Separator />
                       <ScrollArea className="h-[calc(60vh-4rem)] p-4">
@@ -265,7 +269,11 @@ export default function AdminUserDetailsPage() {
                     {/* Additional Education */}
                     <Card className="min-h-[60vh]">
                       <CardHeader>
-                        <CardTitle>Education</CardTitle>
+                        <div className="flex justify-between">
+                          <CardTitle>Education</CardTitle>
+                        <CardTitle><Link href={`/admin/users/updates/${params.id}`}>Update Staff Transfer</Link></CardTitle>
+                        </div>
+                        
                       </CardHeader>
                       <Separator />
                       <ScrollArea className="h-[calc(60vh-4rem)] p-4">
@@ -307,7 +315,11 @@ export default function AdminUserDetailsPage() {
                     {/* Promotions */}
                     <Card className="lg:col-span-1 min-h-[60vh]">
                       <CardHeader>
-                        <CardTitle>Promotion History</CardTitle>
+                         <div className="flex justify-between">
+                          <CardTitle>Promotion History</CardTitle>
+                        <CardTitle><Link href={`/admin/users/updates/${params.id}`}>Update Staff Transfer</Link></CardTitle>
+                        </div>
+                        
                       </CardHeader>
                       <Separator />
                       <ScrollArea className="h-[calc(60vh-4rem)] p-4">
@@ -354,7 +366,11 @@ export default function AdminUserDetailsPage() {
                     {/* Stations */}
                     <Card className="lg:col-span-1 min-h-[60vh]">
                       <CardHeader>
-                        <CardTitle>Stations</CardTitle>
+                         <div className="flex justify-between">
+                          <CardTitle>Stations</CardTitle>
+                        <CardTitle><Link href={`/admin/users/updates/${params.id}`}>Update Staff Transfer</Link></CardTitle>
+                        </div>
+                        
                       </CardHeader>
                       <Separator />
                       <ScrollArea className="h-[calc(60vh-4rem)] p-4">
@@ -392,7 +408,11 @@ export default function AdminUserDetailsPage() {
                     {/* Jobs */}
                     <Card className="lg:col-span-1 min-h-[60vh]">
                       <CardHeader>
-                        <CardTitle>Jobs / Positions</CardTitle>
+                         <div className="flex justify-between">
+                          <CardTitle>Jobs / Positions</CardTitle>
+                        <CardTitle><Link href={`/admin/users/updates/${params.id}`}>Update Staff Transfer</Link></CardTitle>
+                        </div>
+                        
                       </CardHeader>
                       <Separator />
                       <ScrollArea className="h-[calc(60vh-4rem)] p-4">

@@ -29,8 +29,8 @@ export default function Sidebar() {
   admin: [
     { name: "Dashboard", href: "/admin/dashboard", icon: Home },
     { name: "Register User", href: "/admin/register", icon: UserPlus },
-    { name: "Open Monthly Return", href: "/admin/submission-window", icon: BookAlertIcon },
-    { name: "Render Return", href: "/users/submissions", icon: BookAlertIcon },
+    // { name: "Open Monthly Return", href: "/admin/submission-window", icon: BookAlertIcon },
+    // { name: "Render Return", href: "/users/submissions", icon: BookAlertIcon },
   ],
   supervisor: [
     { name: "Dashboard", href: "/", icon: Home },

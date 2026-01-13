@@ -619,7 +619,7 @@ export default function EmploymentPage() {
                       ) : (
                         <>
                           <SelectItem value="__unset__" disabled>
-                            Select LGA
+                            Select PO
                           </SelectItem>
                           {lgas.map((l) => (
                             <SelectItem key={l} value={l}>
