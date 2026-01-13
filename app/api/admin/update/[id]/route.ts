@@ -15,7 +15,7 @@ const updateSchema = z.object({
   rank: z.string().min(1, "Rank is required"),
 });
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const user = await prisma.user.findUnique({
@@ -40,7 +40,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json();
     const validatedData = updateSchema.parse(body);
