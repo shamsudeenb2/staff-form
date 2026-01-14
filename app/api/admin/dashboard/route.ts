@@ -243,6 +243,7 @@ export async function GET(req: Request) {
             rank: true,
             gradeLevel: true,
             dateFirstAppointed: true,
+            presentStation:true,
             standardStation: { select: { name: true } }
           }
         }
@@ -266,6 +267,7 @@ export async function GET(req: Request) {
       rank: u.employmentData?.rank || "—",
       gradeLevel: u.employmentData?.gradeLevel || "—",
       standardStation: u.employmentData?.standardStation?.name || "—",
+      presentStation: u.employmentData?.presentStation || "—",
       done: u.done,
       timeLeft: getRetirementTimeLeft(u.personalData?.dob as Date, u.employmentData?.dateFirstAppointed as Date) || "—",
       createdAt: u.createdAt.toISOString()

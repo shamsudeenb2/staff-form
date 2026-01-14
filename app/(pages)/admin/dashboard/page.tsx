@@ -40,6 +40,7 @@ type UserRow = {
   gender: string;
   rank: string;
   gradeLevel: string;
+  presentStation: string,
   standardStation: string; // Corrected field
   done: boolean;
   timeLeft: string;
@@ -308,6 +309,7 @@ export default function AdminDashboard() {
                           <th className="text-left p-3">Name</th>
                           <th className="text-left p-3">Rank</th>
                           <th className="text-left p-3">Grade</th>
+                          <th className="text-left p-3">State</th>
                           <th className="text-left p-3">Station</th>
                           <th className="text-left p-3">Years Left in Service</th>
                           <th className="text-left p-3">Status</th>
@@ -322,6 +324,7 @@ export default function AdminDashboard() {
                             <td className="p-3">{u.rank}</td>
                             <td className="p-3">{u.gradeLevel}</td>
                             <td className="p-3">{u.standardStation}</td>
+                            <td className="p-3">{u.presentStation}</td>
                             <td className="p-3">{u.timeLeft}</td>
                              <td className="p-3">
                               {u.done ? (
