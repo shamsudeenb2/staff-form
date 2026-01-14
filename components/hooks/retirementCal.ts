@@ -17,11 +17,15 @@ export function getRetirementTimeLeft(
   dateOfAppointment: string | Date
 ): string | RetirementRemaining {
   
-if(dateOfBirth=== undefined && dateOfAppointment===undefined){
+if(dateOfBirth=== undefined || dateOfAppointment===undefined){
     return "—"
 }
 
-if(dateOfBirth=== null && dateOfAppointment===null){
+if(dateOfBirth=== null || dateOfAppointment===null){
+    return "—"
+}
+
+if(!dateOfAppointment){
     return "—"
 }
   const today: Date = new Date();
